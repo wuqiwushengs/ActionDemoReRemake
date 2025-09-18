@@ -13,6 +13,7 @@ void UExecutePreInputImmediately::NotifyBegin(USkeletalMeshComponent* MeshComp, 
 	AActionPlayerCharacter * Character=Cast<AActionPlayerCharacter>(MeshComp->GetOwner());
 	if(!Character) return;
 	Character->GetActionAbilitySystemComponent()->AddLooseGameplayTag(GamePlayTags::ExecutePreInputImmediately);
+	Character->GetActionAbilitySystemComponent()->SetPreInputImmediately(NeededExecuteImmediately);
 }
 
 void UExecutePreInputImmediately::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
@@ -22,4 +23,5 @@ void UExecutePreInputImmediately::NotifyEnd(USkeletalMeshComponent* MeshComp, UA
 	AActionPlayerCharacter * Character=Cast<AActionPlayerCharacter>(MeshComp->GetOwner());
 	if(!Character) return;
 	Character->GetActionAbilitySystemComponent()->RemoveLooseGameplayTag(GamePlayTags::ExecutePreInputImmediately);
+	Character->GetActionAbilitySystemComponent()->TurnPreInputToDefault();
 }

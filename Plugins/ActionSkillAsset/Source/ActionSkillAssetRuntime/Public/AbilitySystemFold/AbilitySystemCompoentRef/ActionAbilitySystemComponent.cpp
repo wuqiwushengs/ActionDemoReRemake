@@ -78,24 +78,28 @@ void UActionAbilitySystemComponent::OnAbilityInputStart(const FInputActionInstan
 	//清除标记并且创建新的标记
 	InputDataMap.FindOrAdd(InputTag)=NewSkillTitle;
 	UE_LOG(LogTemp,Warning,TEXT("Start InputTag %s"),*InputTag.ToString())
+	FAbilityInputInfo AbilityInfo=FAbilityInputInfo(InputTag,WorldTime,InputTagsInBuff.Num()<=0?0:WorldTime-InputTagsInBuff[0].InputWorldTime,InputData.InputType);
+	UE_LOG(LogTemp,Warning,TEXT("PreInput"))
+	if(CheckImmediatelyInputIsAllowed(InputTag))
+	{
+		InputTagsInBuff.Empty();
+		bool IfBound=InputExecuteDelegate.ExecuteIfBound(AbilityInfo);
+		UE_LOG(LogTemp,Warning,TEXT("InputExecuteDelegate   Bind= %s"),IfBound ? TEXT("true") : TEXT("false"))
+		SetCurrentInputState(EInputState::DisableInputState);
+		
+	}
 	switch (CurrentInputState)
 	{
 	case  EInputState::PreInputState:
 		{
 #pragma region PreInputState
 			//立即执行的技能
-			FAbilityInputInfo AbilityInfo=FAbilityInputInfo(InputTag,WorldTime,InputTagsInBuff.Num()<=0?0:WorldTime-InputTagsInBuff[0].InputWorldTime,InputData.InputType);
-			UE_LOG(LogTemp,Warning,TEXT("PreInput"))
-			if(CheckImmediatelyInputIsAllowed(InputTag))
-			{
-				InputTagsInBuff.Empty();
-				bool IfBound=InputExecuteDelegate.ExecuteIfBound(AbilityInfo);
-				UE_LOG(LogTemp,Warning,TEXT("InputExecuteDelegate   Bind= %s"),IfBound ? TEXT("true") : TEXT("false"))
-				SetCurrentInputState(EInputState::DisableInputState);
-			}
-			if(!CheckPreInputIsAllowed(InputTag)) break;
 		
+		
+			//预输入内容
+			if(!CheckPreInputIsAllowed(InputTag)) break;
 			InputTagsInBuff.Add(AbilityInfo);
+			//检测是否有执行的tag如果有那么就直接执行
 			if(this->GetOwnedGameplayTags().HasTag(GamePlayTags::ExecutePreInput))
 			{
 				FAbilityInputInfo FinalInputInfo;
@@ -114,10 +118,9 @@ void UActionAbilitySystemComponent::OnAbilityInputStart(const FInputActionInstan
 		{
 #pragma region  NormalInputState
 			UE_LOG(LogTemp,Warning,TEXT("NormalInput"))
-			FAbilityInputInfo AbilityInputInfo=FAbilityInputInfo(InputTag,WorldTime,InputTagsInBuff.Num()<=0?0:WorldTime-InputTagsInBuff[0].InputWorldTime,InputData.InputType);
-			if (CheckInputLengthToSetInputLock(AbilityInputInfo.InputIntervalTime))
+			if (CheckInputLengthToSetInputLock(AbilityInfo.InputIntervalTime))
 			{
-				InputTagsInBuff.Add(AbilityInputInfo);
+				InputTagsInBuff.Add(AbilityInfo);
 			}
 			if (InputTagsInBuff.Num()>0&&!GetWorld()->GetTimerManager().IsTimerActive(FinalInputTimer))
 			{
