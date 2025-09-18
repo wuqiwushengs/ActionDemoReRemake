@@ -55,6 +55,7 @@ public:
 	/*设置获取当前的输入状态  输入状态分类 预输入 普通输入 禁止输入*/
 	UFUNCTION(BlueprintCallable,BlueprintPure)
 	EInputState GetCurrentInputState();
+	UFUNCTION(BlueprintCallable)
 	void  SetCurrentInputState(EInputState NewInputState);
 	FOnInputStateChanged OnInputStateChanged;
 	/*检查输入时间是否超过缓冲时间由此决定是否继续向缓冲区添加*/
