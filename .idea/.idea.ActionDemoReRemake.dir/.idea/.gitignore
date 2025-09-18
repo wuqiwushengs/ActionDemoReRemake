@@ -13,5 +13,9 @@
 /dataSources.local.xml
 .idea
 .vs
-/Saved
-/Intermediate
+Saved/
+Intermediate/
+Binaries/
+DerivedData/
+Build/
+Logs/
