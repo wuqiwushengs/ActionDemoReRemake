@@ -83,9 +83,18 @@ void UActionAbilitySystemComponent::OnAbilityInputStart(const FInputActionInstan
 	case  EInputState::PreInputState:
 		{
 #pragma region PreInputState
-			UE_LOG(LogTemp,Warning,TEXT("PreInput"))
-			if(!CheckIsAllowed(InputTag)) break;
+			//立即执行的技能
 			FAbilityInputInfo AbilityInfo=FAbilityInputInfo(InputTag,WorldTime,InputTagsInBuff.Num()<=0?0:WorldTime-InputTagsInBuff[0].InputWorldTime,InputData.InputType);
+			UE_LOG(LogTemp,Warning,TEXT("PreInput"))
+			if(CheckImmediatelyInputIsAllowed(InputTag))
+			{
+				InputTagsInBuff.Empty();
+				bool IfBound=InputExecuteDelegate.ExecuteIfBound(AbilityInfo);
+				UE_LOG(LogTemp,Warning,TEXT("InputExecuteDelegate   Bind= %s"),IfBound ? TEXT("true") : TEXT("false"))
+				SetCurrentInputState(EInputState::DisableInputState);
+			}
+			if(!CheckPreInputIsAllowed(InputTag)) break;
+		
 			InputTagsInBuff.Add(AbilityInfo);
 			if(this->GetOwnedGameplayTags().HasTag(GamePlayTags::ExecutePreInput))
 			{
@@ -189,6 +198,12 @@ USkillManager* UActionAbilitySystemComponent::GetSkillManager()
 {
 	return SkillManager;
 }
+
+AActionPlayerCharacter* UActionAbilitySystemComponent::GetActionPlayerCharacter()
+{
+	return Cast<AActionPlayerCharacter>(GetOwnerActor());
+}
+
 void UActionAbilitySystemComponent::SetCurrentStateTag(FGameplayTag NewStateTag)
 {
 	FGameplayTag LastStateTag=CurrentStateTag;
@@ -277,6 +292,28 @@ void UActionAbilitySystemComponent::SetPreInputDisable(const FGameplayTagContain
 		}
 	}
 }
+
+void UActionAbilitySystemComponent::SetPreInputImmediately(const FGameplayTagContainer& Immediately)
+{
+	TArray<FGameplayTag> ImmediatelyTags=Immediately.GetGameplayTagArray();
+	for (FGameplayTag Tag:ImmediatelyTags)
+	{
+		if(AllowedPreInputTag.Find(Tag))
+		{
+			AllowedPreInputTag[Tag]=2;
+		}
+	}
+}
+
+bool UActionAbilitySystemComponent::CheckImmediatelyInputIsAllowed(FGameplayTag InputTag)
+{
+	if (AllowedPreInputTag.Find(InputTag))
+	{
+		return  AllowedPreInputTag[InputTag]==2;
+	}
+	return false;
+}
+
 void UActionAbilitySystemComponent::TurnPreInputToDefault()
 {
 	for (TPair<FGameplayTag,int> & Tag : AllowedPreInputTag)
@@ -284,7 +321,7 @@ void UActionAbilitySystemComponent::TurnPreInputToDefault()
 		Tag.Value=1;
 	}
 }
-bool UActionAbilitySystemComponent::CheckIsAllowed(FGameplayTag InputTag)
+bool UActionAbilitySystemComponent::CheckPreInputIsAllowed(FGameplayTag InputTag)
 {
 	if (AllowedPreInputTag.Find(InputTag))
 	{
@@ -314,7 +351,10 @@ void UActionAbilitySystemComponent::OnInputFinal(const FAbilityInputInfo& InputI
 	UE_LOG(LogTemp,Warning,TEXT("InputFinalExecute"))
 	FSkillTitle SkillTitle=*InputDataMap.Find(InputInfo.InputTag);
 	//这里因为断点可能出现执行的问题因此使用缓存Map,但是可能会在Complete哪里出现一些问题。
-	SkillManager->TurnToNextSkillExecutor(ESkillReleaseType::Manual,SkillTitle);
+	if(!SkillManager->TurnToNextSkillExecutor(ESkillReleaseType::Manual,SkillTitle))
+	{
+		SetCurrentInputState(EInputState::NormalInputState);
+	}
 }
 
 

@@ -9,6 +9,7 @@ namespace GamePlayTags
 	//提示连击的标签
 	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(MultiTipSign,"SkillInputSign.MultiTipSign")
 	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(ExecutePreInput,"SkillInputSign.PreInputSign")
+	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(ExecutePreInputImmediately,"SkillInputSign.PreInputImmediatelySign")
 
 	//状态标签
 	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(Ground,"SkillSelectState.Ground")

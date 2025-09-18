@@ -53,7 +53,7 @@ public:
 	//直接停止自动查询auto类型的技能
 	void  StopAutoCheckChildrenSkillDirectly();
 	//技能能够向下搜寻
-	void TurnToNextSkillExecutor(ESkillReleaseType SkillTriggerType,const FSkillTitle  & InputInfo);
+	bool TurnToNextSkillExecutor(ESkillReleaseType SkillTriggerType,const FSkillTitle  & InputInfo);
 	private:
 	void UpdateAutoSkillCheck();
 	UPROPERTY()

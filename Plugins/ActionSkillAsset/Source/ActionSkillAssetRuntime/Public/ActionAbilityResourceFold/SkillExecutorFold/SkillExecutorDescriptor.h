@@ -5,6 +5,7 @@
 #include "SkillExecutorDescriptor.generated.h"
 
 
+class UExecutorCondition;
 enum class ESkillWeight : uint8;
 class USkillExecutorEditorData;
 class USkillExecutor;
@@ -26,6 +27,8 @@ struct FSkillExecutorDescriptor
 	//技能执行者
 	UPROPERTY(EditDefaultsOnly,Instanced)
 	TObjectPtr<USkillExecutor> Executor;
+	UPROPERTY(EditDefaultsOnly,Instanced)
+	TObjectPtr<UExecutorCondition> Condition;
 	//激活的Tag
 	UPROPERTY(EditDefaultsOnly,meta=(EditCondition=" ReleaseType==ESkillReleaseType::Manual",EditConditionHides))
 	FGameplayTag TriggeredTag;

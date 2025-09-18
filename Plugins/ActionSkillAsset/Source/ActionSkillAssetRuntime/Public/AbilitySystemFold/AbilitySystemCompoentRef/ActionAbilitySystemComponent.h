@@ -10,6 +10,7 @@
 #include "ActionAbilitySystemComponent.generated.h"
 
 
+class AActionPlayerCharacter;
 class UInputDataAsset;
 class USkillManager;
 struct FInputActionInstance;
@@ -44,10 +45,12 @@ public:
 	void OnTurnNormalInputToCheckStillHasPressSkill(EInputState OldState ,EInputState NewState);
 	UFUNCTION(BlueprintCallable,BlueprintPure)
 	USkillManager * GetSkillManager();
+	UFUNCTION()
+	AActionPlayerCharacter * GetActionPlayerCharacter();
 #pragma  region State
 	UPROPERTY()
 	FGameplayTag CurrentStateTag;
-	UFUNCTION(Blueprintable)
+	UFUNCTION(BlueprintCallable)
 	void SetCurrentStateTag(FGameplayTag NewStateTag);
 	FOnStateTagChanged OnStateTagChanged;
 #pragma  endregion
@@ -78,13 +81,14 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TMap<FGameplayTag,int> AllowedPreInputTag;
 	void SetPreInputDisable(const FGameplayTagContainer & DisableTagContainer);
+	void SetPreInputImmediately(const FGameplayTagContainer & Immediately);
+	bool CheckImmediatelyInputIsAllowed(FGameplayTag InputTag);
 	//将预输入内容回归为1
 	void TurnPreInputToDefault();
-	bool CheckIsAllowed(FGameplayTag InputTag);
+	bool CheckPreInputIsAllowed(FGameplayTag InputTag);
 	void OnPreSkillExecute(FGameplayTag ExeTag, int Count);
 	UFUNCTION(BlueprintCallable)
 	void OnInputFinal(const FAbilityInputInfo & InputInfo);
-	void OnPreAbilityEnd(FGameplayTag InputTag);
 #pragma	endregion
 private:
 	TMap<FGameplayTag,FSkillTitle> InputDataMap;

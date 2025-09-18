@@ -3,6 +3,7 @@
 
 #include "SkillManager.h"
 #include "AbilitySystemFold/AbilitySystemCompoentRef/ActionAbilitySystemComponent.h"
+#include "SkillExecutorFold/ExecutorCondition.h"
 
 UActionAbilitySystemComponent * USkillManager::GetOwnerAbilitySystemComponent() const 
 {
@@ -86,7 +87,11 @@ void USkillManager::UpdateAutoSkillCheck()
 		for (auto Config : AutoSkillCheck)
 		{
 			if (Config->ExecutorDescriptor.CanExecute(GetAbilityOwnedTag()))
-			{	
+			{
+				if(Config->ExecutorDescriptor.Condition)
+				{
+					if(!Config->ExecutorDescriptor.Condition->CanTransition(GetOwnerAbilitySystemComponent()->GetActionPlayerCharacter(),GetOwnerAbilitySystemComponent(),this)) continue;
+				}
 				if(!FinalConfig)
 				{FinalConfig=Config;}
 				else
@@ -124,12 +129,13 @@ FGameplayTagContainer USkillManager::GetAbilityOwnedTag() const
    return GetOwnerAbilitySystemComponent()?GetOwnerAbilitySystemComponent()->GetOwnedGameplayTags():FGameplayTagContainer();
 }
 
-void USkillManager::TurnToNextSkillExecutor(ESkillReleaseType SkillTriggerType,const FSkillTitle & InputInfo)
+bool  USkillManager::TurnToNextSkillExecutor(ESkillReleaseType SkillTriggerType,const FSkillTitle & InputInfo)
 {	
 	//执行对应开始的函数
 		if (USkillExecutorConfig * SelectedSkill=FindNextSkillExecutor(SkillTriggerType,InputInfo);SelectedSkill)
 		{
 			StartSelectedSkillConfig(SelectedSkill,InputInfo);
+			return	true;
 		}
 		else
 		{
@@ -142,6 +148,7 @@ void USkillManager::TurnToNextSkillExecutor(ESkillReleaseType SkillTriggerType,c
 				FindCorrectSkillConfigsFromRoot(AutoSkillCheck,ESkillReleaseType::Auto);
 			}
 		};
+	return false;
 }
 //寻找的都是可以执行的而不是仅仅符合技能释放条件的
 USkillExecutorConfig* USkillManager::FindNextSkillExecutor(ESkillReleaseType SkillTriggerType,const FSkillTitle & InputInfo) const 
@@ -171,6 +178,10 @@ USkillExecutorConfig * USkillManager::FindCanExecuteSkillExecutorFromChildren(ES
 	{
 		for (auto SkillConfig:ParentConfig->Children)
 		{
+			if(SkillConfig->ExecutorDescriptor.Condition)
+			{
+				if(!SkillConfig->ExecutorDescriptor.Condition->CanTransition(GetOwnerAbilitySystemComponent()->GetActionPlayerCharacter(),GetOwnerAbilitySystemComponent(),this)) continue;
+			}
 			if (SkillConfig->ExecutorDescriptor.ReleaseType==SkillTriggerType && SkillConfig->ExecutorDescriptor.CanExecute(GetAbilityOwnedTag()) && SkillConfig->ExecutorDescriptor.TriggeredTag==InputInfo.InputTag)
 			{
 					if (!NeededConfig || NeededConfig->ExecutorDescriptor.SkillWeight>SkillConfig->ExecutorDescriptor.SkillWeight )
@@ -190,7 +201,10 @@ void USkillManager::FindCanExecuteSkillConfigFromRoot(USkillExecutorConfig*& Nee
 	if (!Asset) return;
 	//查找正确的状态并返回
 	for (USkillExecutorConfig * ExecutorConfig : Asset->ExecutorConfigs)
+	{   if(ExecutorConfig->ExecutorDescriptor.Condition)
 	{
+		if(!ExecutorConfig->ExecutorDescriptor.Condition->CanTransition(GetOwnerAbilitySystemComponent()->GetActionPlayerCharacter(),GetOwnerAbilitySystemComponent(),this)) continue;
+	}
 		if(TriggerType==ExecutorConfig ->ExecutorDescriptor.ReleaseType&&ExecutorConfig ->ExecutorDescriptor.CanExecute(GetAbilityOwnedTag())&& ExecutorConfig ->ExecutorDescriptor.TriggeredTag==InputInfo.InputTag)
 		{
 			NeededConfig=ExecutorConfig;
