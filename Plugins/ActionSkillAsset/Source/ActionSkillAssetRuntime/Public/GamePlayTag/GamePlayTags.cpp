@@ -1,0 +1,21 @@
+﻿#include "GamePlayTags.h"
+
+namespace GamePlayTags
+{
+	//在这里解释所有的GameplayTag标签
+	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(Move,"NativeInput.Move");
+	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(Look,"NativeInput.Look");
+	
+	//提示连击的标签
+	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(MultiTipSign,"SkillInputSign.MultiTipSign")
+	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(ExecutePreInput,"SkillInputSign.PreInputSign")
+
+	//状态标签
+	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(Ground,"SkillSelectState.Ground")
+	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(InAir,"SkillSelectState.InAir")
+
+	//Skill标签
+	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(RelaxAttack,"SkillTag.RelaxAttack")
+	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(HeavyAttack,"SkillTag.HeavyAttack")
+	
+}

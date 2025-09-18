@@ -1,0 +1,54 @@
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
+#include "GameFramework/Character.h"
+#include "ActionPlayerCharacter.generated.h"
+
+enum class ETriggerEvent : uint8;
+class AActionPlayController;
+class UInputDataAsset;
+struct FInputActionValue;
+class UCameraComponent;
+class USpringArmComponent;
+struct FGameplayTag;
+struct FInputActionInstance;
+class UActionAbilitySystemComponent;
+
+UCLASS()
+class ACTIONSKILLASSETRUNTIME_API AActionPlayerCharacter : public ACharacter,public  IAbilitySystemInterface
+{
+	GENERATED_BODY()
+
+public:
+	// Sets default values for this character's properties
+	AActionPlayerCharacter();
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	UActionAbilitySystemComponent * GetActionAbilitySystemComponent() const ;
+	UInputDataAsset * GetInputDataAsset() const ;
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	UActionAbilitySystemComponent * ActionAbilitySystemComponent;
+	UPROPERTY(EditDefaultsOnly)
+	USpringArmComponent * SpringArmComponent;
+	UPROPERTY(EditDefaultsOnly)
+	UCameraComponent * CameraComponent;
+	UPROPERTY()
+	AActionPlayController * PlayController;
+public:
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+#pragma  region NormalInput
+	FVector2d MovementInputValue;
+	void OnInputMove(const FInputActionValue& InputActionValue);
+	void OnInputLook( const FInputActionValue& InputActionValue);
+	void PrintHello(const FInputActionInstance&  InputActionValue);
+#pragma endregion 
+	// Called to bind functionality to input
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	void OnAbilityInputTrigger(const FInputActionInstance& InputInfo ,FGameplayTag InputData,ETriggerEvent TriggerEvent) ;
+};
