@@ -15,11 +15,17 @@ class ACTIONSKILLASSETRUNTIME_API USkillClipAbility_TipSkill : public USkillClip
 {
 	GENERATED_BODY()
 public:
+	USkillClipAbility_TipSkill();
 	//当发起攻击时开始
 	virtual void PreEntryAbility_Implementation() override;
 	UPROPERTY()
 	UAbilityTask_PlayMontageAndWait * TipMontage;
+	UPROPERTY()
+	UAnimMontage * PlayAnimMontage;
+	UFUNCTION(BlueprintCallable,BlueprintNativeEvent)
+	UAnimMontage *	TipMontagePlayedRule();
+	virtual UAnimMontage *TipMontagePlayedRule_Implementation();
 	UPROPERTY(EditAnywhere,BlueprintReadOnly)
-	UAnimMontage * TipAnimMontage;
+	FMultiAnimPlayed AnimPlayedRules;
 	
 };
