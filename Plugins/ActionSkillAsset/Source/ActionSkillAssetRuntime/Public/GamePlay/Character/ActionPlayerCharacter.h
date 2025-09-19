@@ -5,8 +5,10 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
+#include "InputFold/InputType.h"
 #include "ActionPlayerCharacter.generated.h"
 
+struct FCharacterNormalInputData;
 enum class ETriggerEvent : uint8;
 class AActionPlayController;
 class UInputDataAsset;
@@ -28,6 +30,7 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UActionAbilitySystemComponent * GetActionAbilitySystemComponent() const ;
 	UInputDataAsset * GetInputDataAsset() const ;
+	FCharacterNormalInputData GetCharacterNormalInputData();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -39,6 +42,8 @@ protected:
 	UCameraComponent * CameraComponent;
 	UPROPERTY()
 	AActionPlayController * PlayController;
+	UPROPERTY(BlueprintReadOnly)
+	FCharacterNormalInputData CharacterNormalInputData;
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

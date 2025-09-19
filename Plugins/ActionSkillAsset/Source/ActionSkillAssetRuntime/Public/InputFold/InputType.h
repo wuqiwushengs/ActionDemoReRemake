@@ -30,3 +30,15 @@ enum  class EInputState:uint8
 	NormalInputState,
 	DisableInputState,
 };
+
+//用于存储角色的各种输入数据用来进行记录
+USTRUCT(BlueprintType)
+struct FCharacterNormalInputData
+{
+	GENERATED_BODY()
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D MoveInputValue;
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D LookInputValue;
+	
+};

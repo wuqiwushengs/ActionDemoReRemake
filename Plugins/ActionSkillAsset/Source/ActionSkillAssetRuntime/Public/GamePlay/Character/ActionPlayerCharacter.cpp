@@ -42,6 +42,11 @@ UInputDataAsset* AActionPlayerCharacter::GetInputDataAsset() const
 	return PlayController?PlayController->GetInputDataAsset():nullptr;
 }
 
+FCharacterNormalInputData AActionPlayerCharacter::GetCharacterNormalInputData()
+{
+	return CharacterNormalInputData;
+}
+
 // Called when the game starts or when spawned
 void AActionPlayerCharacter::BeginPlay()
 {
@@ -58,6 +63,7 @@ void AActionPlayerCharacter::Tick(float DeltaTime)
 void AActionPlayerCharacter::OnInputMove(const FInputActionValue&  InputActionValue)
 {
 	MovementInputValue=InputActionValue.Get<FVector2D>();
+	CharacterNormalInputData.MoveInputValue=MovementInputValue;
 	FRotator ControllRotation=GetControlRotation();
 	FVector ForwardVector=UKismetMathLibrary::GetForwardVector(ControllRotation);
 	ForwardVector.Normalize();
@@ -70,6 +76,7 @@ void AActionPlayerCharacter::OnInputMove(const FInputActionValue&  InputActionVa
 void AActionPlayerCharacter::OnInputLook(const FInputActionValue&  InputActionValue)
 {
 	FVector2d InputValue=InputActionValue.Get<FVector2d>();
+	CharacterNormalInputData.LookInputValue=InputValue;
 	AddControllerYawInput(InputValue.X*0.5);
 	AddControllerPitchInput(InputValue.Y*0.5);
 }

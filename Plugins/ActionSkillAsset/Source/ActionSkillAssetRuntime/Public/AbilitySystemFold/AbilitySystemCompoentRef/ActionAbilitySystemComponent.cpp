@@ -23,6 +23,7 @@ UActionAbilitySystemComponent::UActionAbilitySystemComponent()
 void UActionAbilitySystemComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	auto temp = StaticClass();
 	UE_LOG(LogTemp, Warning, TEXT("UActionAbilitySystemComponent instance: %p"), this);
 	// ...
 	//绑定输入执行函数
@@ -32,6 +33,7 @@ void UActionAbilitySystemComponent::BeginPlay()
 	SetCurrentStateTag(GamePlayTags::Ground);
 	SkillManager->Initialize(this);
 	InputDataMap.Empty();
+	
 }
 
 
@@ -205,6 +207,11 @@ USkillManager* UActionAbilitySystemComponent::GetSkillManager()
 AActionPlayerCharacter* UActionAbilitySystemComponent::GetActionPlayerCharacter()
 {
 	return Cast<AActionPlayerCharacter>(GetOwnerActor());
+}
+
+FCharacterNormalInputData UActionAbilitySystemComponent::GetCharacterNormalInputData()
+{
+	return GetActionPlayerCharacter()->GetCharacterNormalInputData();
 }
 
 void UActionAbilitySystemComponent::SetCurrentStateTag(FGameplayTag NewStateTag)

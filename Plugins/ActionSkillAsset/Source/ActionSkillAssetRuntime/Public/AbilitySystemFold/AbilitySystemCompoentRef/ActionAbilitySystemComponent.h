@@ -47,6 +47,8 @@ public:
 	USkillManager * GetSkillManager();
 	UFUNCTION()
 	AActionPlayerCharacter * GetActionPlayerCharacter();
+	UFUNCTION()
+	FCharacterNormalInputData GetCharacterNormalInputData();
 #pragma  region State
 	UPROPERTY()
 	FGameplayTag CurrentStateTag;
