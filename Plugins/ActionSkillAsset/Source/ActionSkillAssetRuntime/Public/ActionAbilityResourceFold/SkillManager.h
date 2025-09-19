@@ -40,7 +40,7 @@ public:
 	FSkillStateDelegate  StartSkillDelegate;
 	FSkillStateDelegate	EndSkillDelegate;
 	//被选择的Executor
-	UPROPERTY()
+	UPROPERTY(Transient)
 	USkillExecutorConfig * SelectedSkillExecutorConfig;
 	void ClearSelectedSSkillExecutorConfig(FGameplayTag SkillTag);
 	//获取当前的状态Tag,即倒地，在地面，在空中这种能过被动出现的，不要把防御，攻击这种状态放在这里，这是为了筛选使用哪一个技能树。
@@ -54,10 +54,11 @@ public:
 	void  StopAutoCheckChildrenSkillDirectly();
 	//技能能够向下搜寻
 	bool TurnToNextSkillExecutor(ESkillReleaseType SkillTriggerType,const FSkillTitle  & InputInfo);
-	private:
 	void UpdateAutoSkillCheck();
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TArray<USkillExecutorConfig * > AutoSkillCheck;
+	private:
+	
 #pragma  region SkillFindAndExecute
 	//寻找下一个技能
 	USkillExecutorConfig *  FindNextSkillExecutor(ESkillReleaseType SkillTriggerType,const FSkillTitle & InputInfo) const ;

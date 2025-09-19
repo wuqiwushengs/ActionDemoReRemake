@@ -48,10 +48,12 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 #pragma  region NormalInput
-	FVector2d MovementInputValue;
+	UPROPERTY(EditDefaultsOnly)
+	//选择攻击插槽的组的名字
+	FName AttackSlotGroupName;
 	void OnInputMove(const FInputActionValue& InputActionValue);
 	void OnInputLook( const FInputActionValue& InputActionValue);
-	void PrintHello(const FInputActionInstance&  InputActionValue);
+	void CheckPostAnimPlayAndStop();
 #pragma endregion 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;

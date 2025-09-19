@@ -23,7 +23,6 @@ UActionAbilitySystemComponent::UActionAbilitySystemComponent()
 void UActionAbilitySystemComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	auto temp = StaticClass();
 	UE_LOG(LogTemp, Warning, TEXT("UActionAbilitySystemComponent instance: %p"), this);
 	// ...
 	//绑定输入执行函数

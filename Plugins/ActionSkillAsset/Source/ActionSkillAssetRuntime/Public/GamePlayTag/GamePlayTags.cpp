@@ -18,5 +18,8 @@ namespace GamePlayTags
 	//Skill标签
 	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(RelaxAttack,"SkillTag.RelaxAttack")
 	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(HeavyAttack,"SkillTag.HeavyAttack")
+
+	//后摇动画的标签
+	ACTIONSKILLASSETRUNTIME_API UE_DEFINE_GAMEPLAY_TAG(PostAnim,"Anim.PostAnim")
 	
 }

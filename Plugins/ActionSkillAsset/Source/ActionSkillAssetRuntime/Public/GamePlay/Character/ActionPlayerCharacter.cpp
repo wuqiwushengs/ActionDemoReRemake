@@ -6,10 +6,12 @@
 #include "AbilitySystemComponent.h"
 #include "InputActionValue.h"
 #include "AbilitySystemFold/AbilitySystemCompoentRef/ActionAbilitySystemComponent.h"
+#include "AnimInstance/PostAnimPlayedNotify.h"
 #include "GamePlay/ActionPlayController.h"
 #include "InputFold/EnhancedInput/ActionInputComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "GamePlayTag/GamePlayTags.h"
 #include "Kismet/KismetMathLibrary.h"
 
 
@@ -62,33 +64,34 @@ void AActionPlayerCharacter::Tick(float DeltaTime)
 #pragma  region NormalInputFunc
 void AActionPlayerCharacter::OnInputMove(const FInputActionValue&  InputActionValue)
 {
-	MovementInputValue=InputActionValue.Get<FVector2D>();
-	CharacterNormalInputData.MoveInputValue=MovementInputValue;
+	CheckPostAnimPlayAndStop();
+	CharacterNormalInputData.MoveInputValue=InputActionValue.Get<FVector2D>();
 	FRotator ControllRotation=GetControlRotation();
 	FVector ForwardVector=UKismetMathLibrary::GetForwardVector(ControllRotation);
 	ForwardVector.Normalize();
 	FVector RightVector=UKismetMathLibrary::GetRightVector(ControllRotation);
 	RightVector.Normalize();
-	AddMovementInput(ForwardVector,MovementInputValue.X);
-	AddMovementInput(RightVector,MovementInputValue.Y);
+	AddMovementInput(ForwardVector,CharacterNormalInputData.MoveInputValue.X);
+	AddMovementInput(RightVector,CharacterNormalInputData.MoveInputValue.Y);
 }
 
 void AActionPlayerCharacter::OnInputLook(const FInputActionValue&  InputActionValue)
 {
-	FVector2d InputValue=InputActionValue.Get<FVector2d>();
-	CharacterNormalInputData.LookInputValue=InputValue;
-	AddControllerYawInput(InputValue.X*0.5);
-	AddControllerPitchInput(InputValue.Y*0.5);
+	CharacterNormalInputData.LookInputValue=InputActionValue.Get<FVector2d>();
+	AddControllerYawInput(CharacterNormalInputData.LookInputValue.X*0.5);
+	AddControllerPitchInput(CharacterNormalInputData.LookInputValue.Y*0.5);
 }
 
-void AActionPlayerCharacter::PrintHello(const FInputActionInstance&  InputActionValue)
+void AActionPlayerCharacter::CheckPostAnimPlayAndStop()
 {
-	UEnum * Enum=StaticEnum<ETriggerEvent>();
-	FString DebugName=Enum->GetNameStringByValue(static_cast<int64>(InputActionValue.GetTriggerEvent()));
-	GEngine->AddOnScreenDebugMessage(-1,1,FColor::Red,DebugName);
-	
-	
+	TSubclassOf<UPostAnimPlayedNotify> Post;
+	if(GetActionAbilitySystemComponent()->GetOwnedGameplayTags().HasTag(GamePlayTags::PostAnim))
+	{
+		GetMesh()->GetAnimInstance()->Montage_StopGroupByName(0,AttackSlotGroupName);
+		GetActionAbilitySystemComponent()->RemoveLooseGameplayTag(GamePlayTags::PostAnim);
+	}
 }
+
 #pragma endregion
 // Called to bind functionality to input
 void AActionPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
