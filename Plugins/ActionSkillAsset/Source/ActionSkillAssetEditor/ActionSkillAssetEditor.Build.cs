@@ -33,7 +33,7 @@ public class ActionSkillAssetEditor : ModuleRules
                 "ApplicationCore",
                 "DataValidation", 
                 "PropertyEditor",
-                "ActionSkillAssetRuntime"
+                "ActionSkillAssetRuntime",
             }
         );
     }

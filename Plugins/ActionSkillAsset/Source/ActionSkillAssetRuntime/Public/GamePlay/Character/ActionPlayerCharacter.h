@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
+#include "CollisionSystem/Interface/CollisionSystemInterface.h"
 #include "GameFramework/Character.h"
 #include "InputFold/InputType.h"
 #include "ActionPlayerCharacter.generated.h"
@@ -20,7 +21,7 @@ struct FInputActionInstance;
 class UActionAbilitySystemComponent;
 
 UCLASS()
-class ACTIONSKILLASSETRUNTIME_API AActionPlayerCharacter : public ACharacter,public  IAbilitySystemInterface
+class ACTIONSKILLASSETRUNTIME_API AActionPlayerCharacter : public ACharacter,public  IAbilitySystemInterface,public ICollisionSystemInterface
 {
 	GENERATED_BODY()
 
@@ -32,18 +33,22 @@ public:
 	UInputDataAsset * GetInputDataAsset() const ;
 	FCharacterNormalInputData GetCharacterNormalInputData();
 protected:
+	virtual UAttackCollisionComponent * GetAttackCollisionComponent_Implementation() override;
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
 	UActionAbilitySystemComponent * ActionAbilitySystemComponent;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
 	USpringArmComponent * SpringArmComponent;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
 	UCameraComponent * CameraComponent;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	UAttackCollisionComponent * AttackCollisionComponent;
 	UPROPERTY()
 	AActionPlayController * PlayController;
 	UPROPERTY(BlueprintReadOnly)
 	FCharacterNormalInputData CharacterNormalInputData;
+
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

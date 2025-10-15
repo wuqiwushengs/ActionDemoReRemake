@@ -16,8 +16,8 @@ void USkillManager::Initialize(UActionAbilitySystemComponent * AbilitySystem)
 	GetOwnerAbilitySystemComponent()->OnInputStateChanged.AddUObject(this,&USkillManager::OnInputStateChanged);
 	EndSkillDelegate.BindUObject(this,&USkillManager::ClearSelectedSSkillExecutorConfig);
 	SelectedSkillExecutorConfig=nullptr;
+	LastSelectedSkillExecutorConfig=nullptr;
 	AutoSkillCheck.Empty();
-	
 	BindAbility();
 	if (bCheckAutoChildrenSkill=CheckSkillExecutorHaveAutoChildSkillFromRoot();bCheckAutoChildrenSkill)
 	{
@@ -96,7 +96,8 @@ void USkillManager::UpdateAutoSkillCheck()
 				{FinalConfig=Config;}
 				else
 				{
-					FinalConfig=FinalConfig->ExecutorDescriptor.OwnerRequestTag.Num()<Config->ExecutorDescriptor.OwnerRequestTag.Num()? Config:FinalConfig;
+					USkillExecutorConfig *	TempConfig=FinalConfig->ExecutorDescriptor.OwnerRequestTag.Num()<Config->ExecutorDescriptor.OwnerRequestTag.Num()? Config:FinalConfig;
+					FinalConfig=FinalConfig->ExecutorDescriptor.SkillWeight>TempConfig->ExecutorDescriptor.SkillWeight?FinalConfig:TempConfig;
 				}
 			}
 		}
@@ -104,6 +105,7 @@ void USkillManager::UpdateAutoSkillCheck()
 		{
 			bCheckAutoChildrenSkill=false;	
 		   StartSelectedSkillConfig(FinalConfig,FSkillTitle());
+			GetOwnerAbilitySystemComponent()->SetCurrentInputState(EInputState::DisableInputState);
 			UE_LOG(LogTemp,Warning,TEXT("Execute Skill"))
 		}
 		return;
@@ -142,7 +144,7 @@ bool  USkillManager::TurnToNextSkillExecutor(ESkillReleaseType SkillTriggerType,
 			//如果尝试的时候为空的情况
 			UE_LOG(LogTemp, Warning, TEXT("Can't find Correct Skill"));
 			//进行自动技能的追踪
-			SelectedSkillExecutorConfig=nullptr;
+			SetSelectedSkillConfig(nullptr);
 			if (bCheckAutoChildrenSkill=CheckSkillExecutorHaveAutoChildSkillFromRoot();bCheckAutoChildrenSkill)
 			{
 				FindCorrectSkillConfigsFromRoot(AutoSkillCheck,ESkillReleaseType::Auto);
@@ -154,7 +156,11 @@ bool  USkillManager::TurnToNextSkillExecutor(ESkillReleaseType SkillTriggerType,
 USkillExecutorConfig* USkillManager::FindNextSkillExecutor(ESkillReleaseType SkillTriggerType,const FSkillTitle & InputInfo) const 
 {
 	USkillExecutorConfig * SelectedSkill=nullptr;
-	if (SelectedSkillExecutorConfig)
+	if(bUsePreSelectedSkill &&LastSelectedSkillExecutorConfig)
+	{
+		SelectedSkill=FindCanExecuteSkillExecutorFromChildren(SkillTriggerType,LastSelectedSkillExecutorConfig,InputInfo);
+	}
+	if (SelectedSkillExecutorConfig && !SelectedSkill)
 	{	//先寻找子类
 		SelectedSkill=FindCanExecuteSkillExecutorFromChildren(SkillTriggerType,SelectedSkillExecutorConfig,InputInfo);
 	}
@@ -262,7 +268,7 @@ void USkillManager::StartSelectedSkillConfig(USkillExecutorConfig* SelectedConfi
 {
 	check(SelectedConfig);
 	ShutdownCurrentSkillExecutor();
-	SelectedSkillExecutorConfig=SelectedConfig;
+	SetSelectedSkillConfig(SelectedConfig);
 	//设置自动技能检测
 	TArray<USkillExecutorConfig *> AutoSkillConfigs;
 	FindCorrectSkillConfigsFromRootAndParent(AutoSkillConfigs,SelectedConfig,ESkillReleaseType::Auto);
@@ -273,6 +279,13 @@ void USkillManager::StartSelectedSkillConfig(USkillExecutorConfig* SelectedConfi
 	//执行前面所选的技能
 	SelectedConfig->ExecutorDescriptor.Executor->InitializeSkill(InputInfo,this);
 }
+
+void USkillManager::SetSelectedSkillConfig(USkillExecutorConfig* InSkillConfig)
+{
+	LastSelectedSkillExecutorConfig=SelectedSkillExecutorConfig;
+	SelectedSkillExecutorConfig=InSkillConfig;
+}
+
 void USkillManager::ShutdownCurrentSkillExecutor()
 {
 	if (SelectedSkillExecutorConfig)
@@ -281,7 +294,7 @@ void USkillManager::ShutdownCurrentSkillExecutor()
 		//执行时停止避免同时起效
 		bCheckAutoChildrenSkill=false;
 		AutoSkillCheck.Empty();
-		SelectedSkillExecutorConfig=nullptr;
+		SetSelectedSkillConfig(nullptr);
 	}
 }
 bool USkillManager:: CheckExecutorHaveAutoChildSkillFromSelectedSkill() const 
@@ -323,6 +336,7 @@ void USkillManager::OnStateTagChanged(FGameplayTag LastGameplayTag, FGameplayTag
 {
 	bCheckAutoChildrenSkill=CheckSkillExecutorHaveAutoChildSkillFromRoot();
 	SelectedSkillExecutorConfig=nullptr;
+	LastSelectedSkillExecutorConfig=nullptr;
 	if (bCheckAutoChildrenSkill)
 	{
 		FindCorrectSkillConfigsFromRoot(AutoSkillCheck,ESkillReleaseType::Auto);
@@ -334,7 +348,7 @@ void USkillManager::OnInputStateChanged(EInputState OldState, EInputState NewSta
 {
 	if (NewState!=EInputState::NormalInputState) return;
 	bCheckAutoChildrenSkill=CheckSkillExecutorHaveAutoChildSkillFromRoot();
-	SelectedSkillExecutorConfig=nullptr;
+	SetSelectedSkillConfig(nullptr);
 	if (bCheckAutoChildrenSkill)
 	{
 		FindCorrectSkillConfigsFromRoot(AutoSkillCheck,ESkillReleaseType::Auto);

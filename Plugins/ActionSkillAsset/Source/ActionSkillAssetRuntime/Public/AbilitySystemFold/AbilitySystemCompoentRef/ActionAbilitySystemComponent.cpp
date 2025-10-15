@@ -175,7 +175,7 @@ void UActionAbilitySystemComponent::OnTurnNormalInputToCheckStillHasPressSkill(E
 {
 	if(NewState!=EInputState::NormalInputState) return;
 	if(InputDataMap.Num()<=0) return;
-
+	//应该还是担心自动的内容
 	if(SkillManager->SelectedSkillExecutorConfig&&SkillManager->SelectedSkillExecutorConfig->ExecutorDescriptor.Executor->IsActive) return;
 	FInputData FinalInputData;
 	for(TPair<FGameplayTag,FSkillTitle> & InputData:InputDataMap)

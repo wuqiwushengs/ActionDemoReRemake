@@ -34,14 +34,18 @@ public:
 	void Initialize(UActionAbilitySystemComponent * AbilitySystem);
 	void BindAbility();
 	void TraverseSkillExecutorConfig(USkillExecutorConfig* Config);
+	//用于保存连段
+	UPROPERTY(BlueprintReadWrite)
+	bool bUsePreSelectedSkill=false;
 	UPROPERTY()
 	UActionAbilitySystemComponent * AbilitySystemComponent;
-	
 	FSkillStateDelegate  StartSkillDelegate;
 	FSkillStateDelegate	EndSkillDelegate;
 	//被选择的Executor
-	UPROPERTY(Transient)
+	UPROPERTY(Transient,BlueprintReadOnly)
 	USkillExecutorConfig * SelectedSkillExecutorConfig;
+	UPROPERTY(Transient,BlueprintReadOnly)
+	USkillExecutorConfig * LastSelectedSkillExecutorConfig;
 	void ClearSelectedSSkillExecutorConfig(FGameplayTag SkillTag);
 	//获取当前的状态Tag,即倒地，在地面，在空中这种能过被动出现的，不要把防御，攻击这种状态放在这里，这是为了筛选使用哪一个技能树。
 	UFUNCTION()
@@ -67,16 +71,17 @@ public:
 	bool CheckExecutorHaveAutoChildSkillFromSelectedSkill() const ;
 	//查询在Root中是否有符合的自动技能子类
 	bool CheckSkillExecutorHaveAutoChildSkillFromRoot() const;
-	//寻找对应的子类技能
+	//寻找对应的可以直接执行的子类技能
 	USkillExecutorConfig * FindCanExecuteSkillExecutorFromChildren(ESkillReleaseType SkillTriggerType,USkillExecutorConfig * ParentConfig,const FSkillTitle & InputInfo) const;
 	//查找可以执行的技能
 	void FindCanExecuteSkillConfigFromRoot(USkillExecutorConfig * & NeededConfig,ESkillReleaseType TriggerType,const FSkillTitle & InputInfo) const ;
-	//查找符合释放条件的技能
+	//查找符合释放条件的技能 但是这三个目前内部编写原因最实用于Auto  如果要寻找可以执行的技能请用上面两个
 	void FindCorrectSkillConfigsFromRoot(TArray<USkillExecutorConfig *> & NeededConfig,ESkillReleaseType TriggerType) const ;
 	void FindCorrectSkillConfigFromChildren(USkillExecutorConfig * Parent,TArray<USkillExecutorConfig*>& Skills,ESkillReleaseType TriggerType);
 	void FindCorrectSkillConfigsFromRootAndParent(TArray<USkillExecutorConfig *>& NeededConfig,USkillExecutorConfig * ParentConfig,ESkillReleaseType TriggerType);
 	//开始执行某个技能
 	void StartSelectedSkillConfig(USkillExecutorConfig * SelectedConfig,const FSkillTitle &InputInfo);
+	void SetSelectedSkillConfig(USkillExecutorConfig *	InSkillConfig);
 	void ShutdownCurrentSkillExecutor();
 	bool bCheckAutoChildrenSkill=false;
 #pragma  endregion

@@ -23,6 +23,7 @@ AActionPlayerCharacter::AActionPlayerCharacter()
 	ActionAbilitySystemComponent=CreateDefaultSubobject<UActionAbilitySystemComponent>("ActionAbilitySystemComponent");
 	SpringArmComponent=CreateDefaultSubobject<USpringArmComponent>("SpringArmComponent");
 	CameraComponent=CreateDefaultSubobject<UCameraComponent>("CameraComponent");
+	AttackCollisionComponent=CreateDefaultSubobject<UAttackCollisionComponent>("AttackCollisionCompoent");
 	//TODO::临时使用后面对摄像机实行自定义方法。
 	SpringArmComponent->SetupAttachment(GetRootComponent());
 	CameraComponent->SetupAttachment(SpringArmComponent);
@@ -49,12 +50,19 @@ FCharacterNormalInputData AActionPlayerCharacter::GetCharacterNormalInputData()
 	return CharacterNormalInputData;
 }
 
+UAttackCollisionComponent* AActionPlayerCharacter::GetAttackCollisionComponent_Implementation()
+{
+	return AttackCollisionComponent;
+}
+
+
 // Called when the game starts or when spawned
 void AActionPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	PlayController=Cast<AActionPlayController>(GetLocalViewingPlayerController());
 }
+
 
 // Called every frame
 void AActionPlayerCharacter::Tick(float DeltaTime)
@@ -63,9 +71,8 @@ void AActionPlayerCharacter::Tick(float DeltaTime)
 }
 #pragma  region NormalInputFunc
 void AActionPlayerCharacter::OnInputMove(const FInputActionValue&  InputActionValue)
-{
+{	CharacterNormalInputData.MoveInputValue=InputActionValue.Get<FVector2D>();
 	CheckPostAnimPlayAndStop();
-	CharacterNormalInputData.MoveInputValue=InputActionValue.Get<FVector2D>();
 	FRotator ControllRotation=GetControlRotation();
 	FVector ForwardVector=UKismetMathLibrary::GetForwardVector(ControllRotation);
 	ForwardVector.Normalize();
@@ -84,7 +91,6 @@ void AActionPlayerCharacter::OnInputLook(const FInputActionValue&  InputActionVa
 
 void AActionPlayerCharacter::CheckPostAnimPlayAndStop()
 {
-	TSubclassOf<UPostAnimPlayedNotify> Post;
 	if(GetActionAbilitySystemComponent()->GetOwnedGameplayTags().HasTag(GamePlayTags::PostAnim))
 	{
 		GetMesh()->GetAnimInstance()->Montage_StopGroupByName(0,AttackSlotGroupName);
