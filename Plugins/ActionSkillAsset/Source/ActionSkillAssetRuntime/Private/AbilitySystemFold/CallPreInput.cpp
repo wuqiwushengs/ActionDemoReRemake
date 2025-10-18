@@ -11,7 +11,7 @@ void UCallPreInput::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceB
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 	AActionPlayerCharacter * Character=Cast<AActionPlayerCharacter>(MeshComp->GetOwner());
 	if (!Character)return;
-	Character->GetActionAbilitySystemComponent()->SetCurrentInputState(EInputState::PreInputState);
+ 	Character->GetActionAbilitySystemComponent()->SetCurrentInputState(EInputState::PreInputState);
 	Character->GetActionAbilitySystemComponent()->SetPreInputDisable(DisablePreTag);
 	
 }

@@ -49,6 +49,10 @@
 		{
 			"Name": "GameplayInsights",
 			"Enabled": true
+		},
+		{
+			"Name": "ActionCameraSystem",
+			"Enabled": true
 		}
 	]
 }

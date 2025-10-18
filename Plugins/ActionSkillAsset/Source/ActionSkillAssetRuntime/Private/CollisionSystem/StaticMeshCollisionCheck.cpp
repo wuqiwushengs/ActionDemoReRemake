@@ -20,7 +20,7 @@ void UStaticMeshCollisionCheck::NotifyBegin(USkeletalMeshComponent* MeshComp, UA
 	if(CSI&&CSIReal)
 	{	TArray<FName> SocketNames;
 		EditCollisionContext.GetCollisionInfo().GenerateKeyArray(SocketNames);
-		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->StartTrace(SocketNames,EditCollisionContext.CollisionType);
+		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->StartTrace(SocketNames,EditCollisionContext.CollisionType,EditCollisionContext.SocketStaticMesh);
 	}
 }
 
@@ -28,13 +28,13 @@ void UStaticMeshCollisionCheck::NotifyTick(USkeletalMeshComponent* MeshComp, UAn
 	float FrameDeltaTime, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyTick(MeshComp, Animation, FrameDeltaTime, EventReference);
+	if(!(MeshComp &&MeshComp->GetOwner())) return;
 	TArray<FHitResult> FinalHitResult;
 	for (TPair<FName,FCollisionInfoSum> CollisionInfo : EditCollisionContext.GetCollisionInfo())
 	{
 		FinalHitResult.Append(FCollisionContext::StaticMeshTraceChannel(
 			MeshComp->GetOwner(),CollisionInfo.Key,CollisionInfo.Value));
 	}
-
 	AActor *	CSI=MeshComp->GetOwner();
 	ICollisionSystemInterface * CSIReal=Cast<ICollisionSystemInterface>(CSI);
 	if(CSI && !FinalHitResult.IsEmpty() && CSIReal)
@@ -50,8 +50,10 @@ void UStaticMeshCollisionCheck::NotifyEnd(USkeletalMeshComponent* MeshComp, UAni
 	AActor *	CSI=MeshComp->GetOwner();
 	ICollisionSystemInterface * CSIReal=Cast<ICollisionSystemInterface>(CSI);
 	if(CSI &&CSIReal)
-	{	
-		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->EndTrace();
+	{
+		TArray<FName> SocketNames;
+		EditCollisionContext.GetCollisionInfo().GenerateKeyArray(SocketNames);
+		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->EndTrace(SocketNames,EditCollisionContext.CollisionType,EditCollisionContext.SocketStaticMesh);
 	}
 }
 

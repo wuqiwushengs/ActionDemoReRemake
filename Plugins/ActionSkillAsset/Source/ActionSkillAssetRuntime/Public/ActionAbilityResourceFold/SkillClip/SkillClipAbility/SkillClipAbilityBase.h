@@ -35,6 +35,8 @@ public:
 	float GetHoldMinTime();
 	UFUNCTION(BlueprintCallable,BlueprintPure)
 	float GetCurrentHoldTime();
+	UFUNCTION(BlueprintCallable,BlueprintPure)
+	const  USkillExecutor * GetExecutor();
 	UPROPERTY()
 	FEndAbilityEvent AbilityEvent;
 protected:

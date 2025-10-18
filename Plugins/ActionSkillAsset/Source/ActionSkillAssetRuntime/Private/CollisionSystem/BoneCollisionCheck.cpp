@@ -49,8 +49,10 @@ void UBoneCollisionCheck::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSeque
 	AActor *	CSI=MeshComp->GetOwner();
 	ICollisionSystemInterface * CSIReal=Cast<ICollisionSystemInterface>(CSI);
 	if(CSI&&CSIReal)
-	{	
-		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->EndTrace();
+	{
+		TArray<FName> SocketNames;
+		EditCollisionContext.GetCollisionInfo().GenerateKeyArray(SocketNames);
+		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->EndTrace(EditCollisionContext.CollisionType,SocketNames);
 	}
 }
 

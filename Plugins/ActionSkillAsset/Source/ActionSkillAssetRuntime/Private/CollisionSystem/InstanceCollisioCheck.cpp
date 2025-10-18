@@ -40,7 +40,7 @@ void UInstanceCollisioCheck::Notify(USkeletalMeshComponent* MeshComp, UAnimSeque
 		TArray<FName> SocketNames;
 		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->StartTrace(SocketNames,EditCollisionContext.CollisionType);
 		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->OnAttacktoTagretRecall(FinalHitResult);
-		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->EndTrace();
+		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->EndTrace(EditCollisionContext.CollisionType,SocketNames);
 	}
 }
 

@@ -20,6 +20,7 @@ struct FGameplayTag;
 struct FInputActionInstance;
 class UActionAbilitySystemComponent;
 
+//已经实现了基础的移动和视角更改如果需要更改的话请
 UCLASS()
 class ACTIONSKILLASSETRUNTIME_API AActionPlayerCharacter : public ACharacter,public  IAbilitySystemInterface,public ICollisionSystemInterface
 {
@@ -31,6 +32,7 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UActionAbilitySystemComponent * GetActionAbilitySystemComponent() const ;
 	UInputDataAsset * GetInputDataAsset() const ;
+	UFUNCTION(BlueprintCallable,BlueprintPure)
 	FCharacterNormalInputData GetCharacterNormalInputData();
 protected:
 	virtual UAttackCollisionComponent * GetAttackCollisionComponent_Implementation() override;
@@ -57,7 +59,9 @@ public:
 	//选择攻击插槽的组的名字
 	FName AttackSlotGroupName;
 	void OnInputMove(const FInputActionValue& InputActionValue);
+	virtual void ProcessMove(const FInputActionValue& InputActionValue);
 	void OnInputLook( const FInputActionValue& InputActionValue);
+	virtual void ProcessLook(const FInputActionValue& InputActionValue);
 	void CheckPostAnimPlayAndStop();
 #pragma endregion 
 	// Called to bind functionality to input

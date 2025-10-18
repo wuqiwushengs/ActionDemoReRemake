@@ -106,3 +106,18 @@ public:
 		return DesiredStateTag;
 	};
 };
+
+UCLASS(Blueprintable)
+class ACTIONSKILLASSETRUNTIME_API USkillExecutorDescriptorAssetSumLink : public UPrimaryDataAsset
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditDefaultsOnly)
+	TMap<FGameplayTag,USkillExecutorDescriptorAssetSum *> SkillExecutorSumLink;
+	FGameplayTag GetDesiredLinkTag(USkillExecutorDescriptorAssetSum * SkillExecutorSum)
+	{
+		FGameplayTag DesiredStateTag=*SkillExecutorSumLink.FindKey(SkillExecutorSum);
+		return DesiredStateTag;
+	}
+};

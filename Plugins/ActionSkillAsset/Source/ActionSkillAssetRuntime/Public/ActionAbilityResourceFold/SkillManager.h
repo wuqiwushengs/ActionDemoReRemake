@@ -15,7 +15,8 @@ class UActionAbilitySystemComponent;
 /**
  * 
  */
-DECLARE_DELEGATE_OneParam(FSkillStateDelegate,FGameplayTag)
+DECLARE_MULTICAST_DELEGATE_OneParam(FSkillStateDelegate,FGameplayTag)
+
 UCLASS()
 class ACTIONSKILLASSETRUNTIME_API USkillManager : public UObject ,public FTickableGameObject
 {
@@ -36,7 +37,7 @@ public:
 	void TraverseSkillExecutorConfig(USkillExecutorConfig* Config);
 	//用于保存连段
 	UPROPERTY(BlueprintReadWrite)
-	bool bUsePreSelectedSkill=false;
+	mutable  bool bUsePreSelectedSkill=false;
 	UPROPERTY()
 	UActionAbilitySystemComponent * AbilitySystemComponent;
 	FSkillStateDelegate  StartSkillDelegate;
@@ -53,7 +54,15 @@ public:
 	UFUNCTION()
 	FGameplayTagContainer GetAbilityOwnedTag() const ;
 	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<USkillExecutorDescriptorAssetSum> SkillAssetSum;
+	TObjectPtr<USkillExecutorDescriptorAssetSumLink> SkillAssetSumLink;
+	UPROPERTY(Transient)
+	TObjectPtr<USkillExecutorDescriptorAssetSum> SelectedSkillAssetSum;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	FGameplayTag SkillAssetLinkTag;
+	//链接的SkillAsset改变的Delegate
+	FSkillStateDelegate SkillAssetChangeDelegate;
+	UFUNCTION(BlueprintCallable)
+	void ChangeSkillAssetLinkTag(FGameplayTag SkillAssetTag);
 	//直接停止自动查询auto类型的技能
 	void  StopAutoCheckChildrenSkillDirectly();
 	//技能能够向下搜寻

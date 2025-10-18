@@ -41,6 +41,7 @@ void UContinueGlobalCollisionCheck::NotifyTick(USkeletalMeshComponent* MeshComp,
 {
 	Super::NotifyTick(MeshComp, Animation, FrameDeltaTime, EventReference);
 	if(EditCollisionContext.GetCollisionInfo().Num()<=0) return;
+	if(!(MeshComp &&MeshComp->GetOwner())) return;
 	TArray<FHitResult> FinalHitResult;
 	for (TPair<FName,FCollisionInfoSum> CollisionInfo : EditCollisionContext.GetCollisionInfo())
 	{
@@ -66,7 +67,8 @@ void UContinueGlobalCollisionCheck::NotifyEnd(USkeletalMeshComponent* MeshComp, 
 	ICollisionSystemInterface * CSIReal=Cast<ICollisionSystemInterface>(CSI);
 	if(CSI &&CSIReal)
 	{
-		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->EndTrace();
+		TArray<FName> SocketNames;
+		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->EndTrace(EditCollisionContext.CollisionType,SocketNames);
 	}
 }
 

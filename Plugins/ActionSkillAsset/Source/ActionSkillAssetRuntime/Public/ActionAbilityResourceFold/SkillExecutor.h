@@ -24,12 +24,13 @@ public:
 	UFUNCTION()
 	UActionAbilitySystemComponent *GetOwnerAbilitySystemComponent();
 	
-	void SkillExecutorTickFunc();
+	void SkillExecutorTickFunc(float DeltaTime);
 	UFUNCTION(BlueprintCallable)
 	void InitializeSkill(FSkillTitle InputSkill,USkillManager * inSkillManager);
 	void InitializeAbility(UActionAbilitySystemComponent * OwnerAbilitySystemComponent);
 	void OnSkillTrigger(FSkillTitle  TriggerInput);
 	//外部调用
+	UFUNCTION(BlueprintCallable)
 	void InterruptExecution();
 	UFUNCTION()
 	void OnPreClipEnd();
@@ -42,10 +43,12 @@ private:
 	void StopCurrentSkill(TVariant<TSubclassOf<USkillClip_PlayMontage>,TSubclassOf<USkillClipAbilityBase>> Clip);
 	UPROPERTY()
 	TWeakObjectPtr<USkillManager> SkillManager;
-	
+	UFUNCTION(BlueprintCallable,BlueprintPure)
+	USkillManager *GetSkillManager();
 public:
 	#pragma region Skill
-	
+	UPROPERTY(EditAnywhere)
+	bool  bCanSavetoOffset=true;
 	UPROPERTY(EditAnywhere)
 	bool bNeedTipSkill=false;
 	//不需要所有都加内容，只需要加所需要的即可，单击和其他技能相互冲突，不需要一起添加
@@ -77,6 +80,12 @@ public:
 	UPROPERTY()
 	FGameplayAbilitySpecHandle PlayedAbilitySpecHandle;
 	TQueue<TVariant<TSubclassOf<USkillClip_PlayMontage>,TSubclassOf<USkillClipAbilityBase>>> LodeSkillClip;
+
+	//前一个切片或者是Ability
+	UPROPERTY(BlueprintReadOnly)
+	USkillClip_PlayMontage*  LastExeClip;
+	UPROPERTY(BlueprintReadOnly)
+	FGameplayAbilitySpecHandle LastExeAbilitySpecHandle;
 	float CurrentTime;
 	bool IsActive=false;
 	

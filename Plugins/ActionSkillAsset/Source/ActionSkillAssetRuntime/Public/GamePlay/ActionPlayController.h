@@ -6,6 +6,9 @@
 #include "GameFramework/PlayerController.h"
 #include "ActionPlayController.generated.h"
 
+class UActionInputComponent;
+class UEnhancedInputLocalPlayerSubsystem;
+class AActionPlayerCharacter;
 class UInputMappingContext;
 class UInputDataAsset;
 /**
@@ -20,6 +23,7 @@ public:
 	virtual void SetupInputComponent() override;
 	UInputDataAsset * GetInputDataAsset();
 	void RegisterInputAction(APawn * InPawn);
+	virtual  void CustomNormalInputBinding(UEnhancedInputLocalPlayerSubsystem *InputSubsystem,UActionInputComponent * ActionInputComponent ,AActionPlayerCharacter * RefCharacter);
 protected:
 	UPROPERTY(EditDefaultsOnly)
 	UInputDataAsset* InputDataAsset;

@@ -14,9 +14,11 @@ void USkillManager::Initialize(UActionAbilitySystemComponent * AbilitySystem)
 	this->AbilitySystemComponent=AbilitySystem;
 	GetOwnerAbilitySystemComponent()->OnStateTagChanged.AddUObject(this,&USkillManager::OnStateTagChanged);
 	GetOwnerAbilitySystemComponent()->OnInputStateChanged.AddUObject(this,&USkillManager::OnInputStateChanged);
-	EndSkillDelegate.BindUObject(this,&USkillManager::ClearSelectedSSkillExecutorConfig);
+	EndSkillDelegate.AddUObject(this,&USkillManager::ClearSelectedSSkillExecutorConfig);
 	SelectedSkillExecutorConfig=nullptr;
 	LastSelectedSkillExecutorConfig=nullptr;
+	SelectedSkillAssetSum=nullptr;
+	ChangeSkillAssetLinkTag(SkillAssetLinkTag);
 	AutoSkillCheck.Empty();
 	BindAbility();
 	if (bCheckAutoChildrenSkill=CheckSkillExecutorHaveAutoChildSkillFromRoot();bCheckAutoChildrenSkill)
@@ -27,7 +29,7 @@ void USkillManager::Initialize(UActionAbilitySystemComponent * AbilitySystem)
 
 void USkillManager::BindAbility()
 {
-	for (TPair<FGameplayTag,USkillExecutorDescriptorAsset *> Asset: SkillAssetSum->SKillExecutorAssets)
+	for (TPair<FGameplayTag,USkillExecutorDescriptorAsset *> Asset: SelectedSkillAssetSum->SKillExecutorAssets)
 	{
 		for(USkillExecutorConfig * Config :Asset.Value->ExecutorConfigs)
 		{
@@ -55,6 +57,10 @@ void USkillManager::Tick(float DeltaTime)
 	if (bCheckAutoChildrenSkill)
 	{
 		UpdateAutoSkillCheck();
+	}
+	if(SelectedSkillExecutorConfig&&SelectedSkillExecutorConfig->ExecutorDescriptor.Executor->IsActive)
+	{
+		SelectedSkillExecutorConfig->ExecutorDescriptor.Executor->SkillExecutorTickFunc(DeltaTime);
 	}
 }
 
@@ -159,6 +165,7 @@ USkillExecutorConfig* USkillManager::FindNextSkillExecutor(ESkillReleaseType Ski
 	if(bUsePreSelectedSkill &&LastSelectedSkillExecutorConfig)
 	{
 		SelectedSkill=FindCanExecuteSkillExecutorFromChildren(SkillTriggerType,LastSelectedSkillExecutorConfig,InputInfo);
+		bUsePreSelectedSkill=true;
 	}
 	if (SelectedSkillExecutorConfig && !SelectedSkill)
 	{	//先寻找子类
@@ -176,10 +183,11 @@ USkillExecutorConfig * USkillManager::FindCanExecuteSkillExecutorFromChildren(ES
 	//检查当前技能是不是当前这个技能资产里面的
 	USkillExecutorConfig * RootConfig=ParentConfig->FindRootSkillExecutorConfig(ParentConfig);
 	UActionAbilitySystemComponent * ActionAbilitySystemCompoent=GetOwnerAbilitySystemComponent();
-	USkillExecutorDescriptorAsset * Asset=*SkillAssetSum->SKillExecutorAssets.Find(ActionAbilitySystemCompoent->CurrentStateTag);
+	USkillExecutorDescriptorAsset * Asset=*SelectedSkillAssetSum->SKillExecutorAssets.Find(ActionAbilitySystemCompoent->CurrentStateTag);
 	bool bFind=Asset->ExecutorConfigs.Contains(RootConfig);
 	if(!bFind) return NeededConfig;
 	//检查其下面有咩有能够执行的
+	//如果符合条件那么就判断需要的tag有没有然后再判断权重
 	if (ParentConfig && ParentConfig->Children.Num() > 0)
 	{
 		for (auto SkillConfig:ParentConfig->Children)
@@ -203,7 +211,7 @@ void USkillManager::FindCanExecuteSkillConfigFromRoot(USkillExecutorConfig*& Nee
 {
 	NeededConfig=nullptr;
 	UActionAbilitySystemComponent * ActionAbilitySystemCompoent=GetOwnerAbilitySystemComponent();
-	USkillExecutorDescriptorAsset * Asset=*SkillAssetSum->SKillExecutorAssets.Find(ActionAbilitySystemCompoent->CurrentStateTag);
+	USkillExecutorDescriptorAsset * Asset=*SelectedSkillAssetSum->SKillExecutorAssets.Find(ActionAbilitySystemCompoent->CurrentStateTag);
 	if (!Asset) return;
 	//查找正确的状态并返回
 	for (USkillExecutorConfig * ExecutorConfig : Asset->ExecutorConfigs)
@@ -222,8 +230,8 @@ void USkillManager::FindCanExecuteSkillConfigFromRoot(USkillExecutorConfig*& Nee
 void USkillManager::FindCorrectSkillConfigsFromRoot(TArray<USkillExecutorConfig*>& NeededConfig, ESkillReleaseType TriggerType) const 
 {
 	NeededConfig.Empty();
-	if (!SkillAssetSum) return;
-	USkillExecutorDescriptorAsset * Assets=*SkillAssetSum->SKillExecutorAssets.Find(GetOwnerAbilitySystemComponent()->CurrentStateTag);
+	if (!SelectedSkillAssetSum) return;
+	USkillExecutorDescriptorAsset * Assets=*SelectedSkillAssetSum->SKillExecutorAssets.Find(GetOwnerAbilitySystemComponent()->CurrentStateTag);
 	if (Assets->ExecutorConfigs.Num()<=0) return;
 	for (USkillExecutorConfig * Config:Assets->ExecutorConfigs)
 	{
@@ -282,7 +290,11 @@ void USkillManager::StartSelectedSkillConfig(USkillExecutorConfig* SelectedConfi
 
 void USkillManager::SetSelectedSkillConfig(USkillExecutorConfig* InSkillConfig)
 {
-	LastSelectedSkillExecutorConfig=SelectedSkillExecutorConfig;
+
+	if(SelectedSkillExecutorConfig&&SelectedSkillExecutorConfig->ExecutorDescriptor.Executor->bCanSavetoOffset)
+	{
+		LastSelectedSkillExecutorConfig=SelectedSkillExecutorConfig;
+	}
 	SelectedSkillExecutorConfig=InSkillConfig;
 }
 
@@ -316,7 +328,7 @@ bool USkillManager:: CheckExecutorHaveAutoChildSkillFromSelectedSkill() const
 
 bool USkillManager::CheckSkillExecutorHaveAutoChildSkillFromRoot() const 
 {
-	USkillExecutorDescriptorAsset * Assets=*SkillAssetSum->SKillExecutorAssets.Find(GetOwnerAbilitySystemComponent()->CurrentStateTag);
+	USkillExecutorDescriptorAsset * Assets=*SelectedSkillAssetSum->SKillExecutorAssets.Find(GetOwnerAbilitySystemComponent()->CurrentStateTag);
 	if (!Assets) return false;
 	for (USkillExecutorConfig * Config:Assets->ExecutorConfigs)
 	{
@@ -327,6 +339,31 @@ bool USkillManager::CheckSkillExecutorHaveAutoChildSkillFromRoot() const
 	}
 	return false;
 }
+
+void USkillManager::ChangeSkillAssetLinkTag(FGameplayTag SkillAssetTag)
+{
+	SkillAssetLinkTag=SkillAssetTag;
+	if(SelectedSkillExecutorConfig)
+	{
+		SelectedSkillExecutorConfig->ExecutorDescriptor.Executor->InterruptExecution();
+	}
+	LastSelectedSkillExecutorConfig=nullptr;
+	bUsePreSelectedSkill=false;
+	StopAutoCheckChildrenSkillDirectly();
+	AutoSkillCheck.Empty();
+	SelectedSkillAssetSum=*SkillAssetSumLink->SkillExecutorSumLink.Find(SkillAssetTag);
+	if (bCheckAutoChildrenSkill)
+	{
+		FindCorrectSkillConfigsFromRoot(AutoSkillCheck,ESkillReleaseType::Auto);
+	}
+	bCheckAutoChildrenSkill=CheckSkillExecutorHaveAutoChildSkillFromRoot();
+	if(SkillAssetChangeDelegate.IsBound())
+	{
+		SkillAssetChangeDelegate.Broadcast(SkillAssetTag);
+	}
+	
+}
+
 void USkillManager::StopAutoCheckChildrenSkillDirectly()
 {
 	bCheckAutoChildrenSkill=false;
@@ -334,6 +371,7 @@ void USkillManager::StopAutoCheckChildrenSkillDirectly()
 //当状态切换时切换能够进行过度的技能
 void USkillManager::OnStateTagChanged(FGameplayTag LastGameplayTag, FGameplayTag NewGameplayTag)
 {
+	AutoSkillCheck.Empty();
 	bCheckAutoChildrenSkill=CheckSkillExecutorHaveAutoChildSkillFromRoot();
 	SelectedSkillExecutorConfig=nullptr;
 	LastSelectedSkillExecutorConfig=nullptr;
@@ -341,7 +379,7 @@ void USkillManager::OnStateTagChanged(FGameplayTag LastGameplayTag, FGameplayTag
 	{
 		FindCorrectSkillConfigsFromRoot(AutoSkillCheck,ESkillReleaseType::Auto);
 	}
-	AutoSkillCheck.Empty();
+	
 }
 
 void USkillManager::OnInputStateChanged(EInputState OldState, EInputState NewState)

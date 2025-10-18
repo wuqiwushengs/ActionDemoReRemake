@@ -66,8 +66,9 @@ USTRUCT(BlueprintType)
 struct FHoldSkillInfo
 {
 	GENERATED_BODY()
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere,BlueprintReadOnly)
 	float MinHoldTime;
+	UPROPERTY(BlueprintReadOnly)
 	float CurrentHoldTime;;
 };
 USTRUCT(BlueprintType)
@@ -99,9 +100,9 @@ USTRUCT(BlueprintType)
 struct FHoldSkill
 {
 	GENERATED_BODY()
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere,BlueprintReadOnly)
 	EPreHoldTimeType HoldType;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere,BlueprintReadOnly)
 	FHoldSkillInfo HoldSkillInfo;
 	//执行阶段
 	UPROPERTY(EditAnywhere)

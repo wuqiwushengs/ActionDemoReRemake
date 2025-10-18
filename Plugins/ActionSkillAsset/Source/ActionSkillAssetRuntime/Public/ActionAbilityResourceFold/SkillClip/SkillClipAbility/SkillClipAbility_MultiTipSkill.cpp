@@ -72,7 +72,11 @@ void USkillClipAbility_MultiTipSkill::EndAbility(const FGameplayAbilitySpecHandl
 	if(ChoosePlayAgain_orEndAbility()) return;
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 	//清理事件绑定避免内存泄漏
-	MultiTipEvent->EventReceived.Clear();
-	MultiTipEvent->EndTask();
-	MultiTipEvent = nullptr;
+	if(MultiTipEvent)
+	{
+		MultiTipEvent->EventReceived.Clear();
+		MultiTipEvent->EndTask();
+		MultiTipEvent = nullptr;
+	}
+	
 }

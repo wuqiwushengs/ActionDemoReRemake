@@ -32,7 +32,7 @@ void USkillClipAbilityBase::PreEntryAbility_Implementation()
 }
 void USkillClipAbilityBase::OnEntryAbility_Implementation()
 {
-	UE_LOG(LogTemp,Warning,TEXT("%s SkillClipMontagePlay"),*GetName());
+	
 }
 void USkillClipAbilityBase::OnEndAbility_Implementation()
 {
@@ -47,8 +47,7 @@ void USkillClipAbilityBase::EndAbility(const FGameplayAbilitySpecHandle Handle,
 		UE_LOG(LogTemp, Warning, TEXT("%s is already exiting, skipping..."), *GetName());
 		return;
 	}
-	bIsExiting = true;
-	UE_LOG(LogTemp,Warning,TEXT("%s SkillClipMontageEnd"),*GetName());
+	bIsExiting = true;;
 	if (!AbilityEvent.ExecuteIfBound())
 	{
 		UE_LOG(LogTemp,Warning,TEXT("%s don't bind End Event"),*GetName());
@@ -70,6 +69,11 @@ float USkillClipAbilityBase::GetHoldMinTime()
 float USkillClipAbilityBase::GetCurrentHoldTime()
 {
 	return Executor->HoldSkill.HoldSkillInfo.CurrentHoldTime;
+}
+
+const USkillExecutor* USkillClipAbilityBase::GetExecutor()
+{
+	return Executor;
 }
 
 

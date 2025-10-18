@@ -78,6 +78,7 @@ struct FCollisionInfoSum
 	//专门用在瞬时内容当中
 	UPROPERTY(EditAnywhere,BlueprintReadOnly)
 	UTexture2D * Icon;
+	
 #if WITH_EDITORONLY_DATA
 	FGlobalCollisionTargetPoint CollisionTargetPoint;
 #endif
@@ -135,6 +136,8 @@ struct FCollisionInfoSum
 	bool bIgnoreSelf;
 	UPROPERTY(EditAnywhere,BlueprintReadOnly)
 	bool bMultiTrace;
+	UPROPERTY(EditAnywhere,BlueprintReadOnly)
+	FLinearColor LinearColor;
 
 #pragma region DebugInfo
 	UPROPERTY(EditAnywhere,BlueprintReadOnly)
@@ -171,6 +174,9 @@ struct FCollisionContext
 	TMap<FName,FCollisionInfoSum> BoneCollisionInfo;
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,meta=(EditCondition="CollisionType==ECollisionType::StaticMesh",EditConditionHides))
 	TMap<FName,FCollisionInfoSum> StaticMeshSocketCollisionInfo;
+	//用在静态网格检测当中
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,meta=(EditCondition="CollisionType==ECollisionType::StaticMesh",EditConditionHides))
+	UStaticMesh * SocketStaticMesh;
 	//这个用在瞬时的碰撞检测上
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,meta=(EditCondition="CollisionType==ECollisionType::GlobalCollision",EditConditionHides))
 	TMap<FName,FCollisionInfoSum> GlobalCollision;
@@ -250,8 +256,8 @@ struct FCollisionContext
 		}
 		return TMap<FName,FCollisionInfoSum>();
 	}
-	static void DebugTraceSweep(AActor * Tracer, const TArray<FHitResult> & HitResults,const FCollisionInfoSum & CollisionInfoSum,const FVector & Start, const FVector & End,bool bHit);
-	static void DebugTraceSweepSingle(AActor * Tracer,FHitResult & HitResults, const FCollisionInfoSum& CollisionInfoSum,const FVector & Start, const FVector & End,bool bHit);
+	static void DebugTraceSweep(AActor * Tracer, const TArray<FHitResult> & HitResults,const FCollisionInfoSum & CollisionInfoSum,const FVector & Start, const FVector & End,bool bHit,FLinearColor DebugColor=FLinearColor::Red);
+	static void DebugTraceSweepSingle(AActor * Tracer,FHitResult & HitResults, const FCollisionInfoSum& CollisionInfoSum,const FVector & Start, const FVector & End,bool bHit,FLinearColor DebugColor=FLinearColor::Red);
 private:
 	void SetCollisionQueryAndCollisionShape(TMap<FName,FCollisionInfoSum> CollisionInfos)
 	{

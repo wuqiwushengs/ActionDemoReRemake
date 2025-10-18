@@ -5,35 +5,92 @@
 #include "CollisionSystem/CollisionCompoent/AttackCollisionComponent.h"
 
 
-
 UAttackCollisionComponent::UAttackCollisionComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
-FVector UAttackCollisionComponent::GetLastUpdateSocketLocation_Implementation(const FName & SocketName)
+FVector UAttackCollisionComponent::GetLastUpdateSocketLocation_Implementation(const FName & SocketName,ECollisionType CollisionType)
 {
-	return LastSocketLocation.FindOrAdd(SocketName);
+	check(CollisionType!=ECollisionType::GlobalCollision);
+	return   TraceInfo.Find(CollisionType)?TraceInfo.Find(CollisionType)->LastSocketLocation.FindOrAdd(SocketName):FVector();
 }
 
-FVector UAttackCollisionComponent::GetCurrentUpdateSocketLocation_Implementation(const FName & SocketName)
+FVector UAttackCollisionComponent::GetCurrentUpdateSocketLocation_Implementation(const FName & SocketName,ECollisionType CollisionType)
 {
-	return  CurrentSocketLocation.FindOrAdd(SocketName);
+	check(CollisionType!=ECollisionType::GlobalCollision);
+	return  TraceInfo.Find(CollisionType)?TraceInfo.Find(CollisionType)->CurrentSocketLocation.FindOrAdd(SocketName):FVector();
 }
 
-void  UAttackCollisionComponent::StartTrace_Implementation(const TArray<FName> &TraceFollowName, ECollisionType CollisionCategory)
+void UAttackCollisionComponent::StartTrace(const TArray<FName>& TraceFollowName, ECollisionType CollisionCategory)
 {
-	bStartTrace=true;
-	SocketNames=TraceFollowName;
-	CollisionType=CollisionCategory;
+	//通用检测不应该使用骨骼信息
+	if(CollisionCategory==ECollisionType::GlobalCollision) return ;
+	TraceInfo.FindOrAdd(CollisionCategory).SocketNames.Append(TraceFollowName);
+	TraceNum+=TraceFollowName.Num();
 }
-void UAttackCollisionComponent::EndTrace_Implementation()
+
+void UAttackCollisionComponent::StartTrace(const TArray<FName>& TraceFollowName, ECollisionType CollisionCategory,
+	UStaticMesh* AttachStaticMesh)
+{
+	
+	if(CollisionCategory!=ECollisionType::StaticMesh) return;
+	TraceInfo.FindOrAdd(CollisionCategory).SocketNames.Append(TraceFollowName);
+	TraceNum+=TraceFollowName.Num();
+	for(auto & MeshInfo:StaticMeshComponentArray)
+	{
+		if(MeshInfo.Key->GetStaticMesh()&&MeshInfo.Key->GetStaticMesh()==AttachStaticMesh)
+		{
+			MeshInfo.Value.Append(TraceFollowName);
+		}
+	}
+}
+
+void UAttackCollisionComponent::EndTrace(ECollisionType CollisionType, const TArray<FName>& TraceFollowName)
+{
+	//通用检测不应该取消骨骼信息
+	if(CollisionType==ECollisionType::GlobalCollision) return;
+	if(TraceInfo.Find(CollisionType))
+	{
+		for (FName  TraceName: TraceFollowName)
+		{
+			if(!TraceInfo.Find(CollisionType)->SocketNames.Find(TraceName)) continue;
+			TraceInfo.Find(CollisionType)->SocketNames.Remove (TraceName);
+			TraceInfo.Find(CollisionType)->CurrentSocketLocation.Remove(TraceName);
+			TraceInfo.Find(CollisionType)->LastSocketLocation.Remove(TraceName);
+		}
+	}
+	TraceNum-=TraceFollowName.Num();
+}
+
+void UAttackCollisionComponent::EndTrace(const TArray<FName>& TraceFollowName, ECollisionType CollisionCategory,
+	UStaticMesh* AttachStaticMesh)
 {
 
-	SocketNames.Empty();
-	CurrentSocketLocation.Empty();
-	LastSocketLocation.Empty();
-	bStartTrace=false;
+	if(CollisionCategory!=ECollisionType::StaticMesh) return;
+	if(TraceInfo.Find(CollisionCategory))
+	{
+		for (FName  TraceName: TraceFollowName)
+		{
+			if(!TraceInfo.Find(CollisionCategory)->SocketNames.Find(TraceName)) continue;
+			TraceInfo.Find(CollisionCategory)->SocketNames.Remove (TraceName);
+			TraceInfo.Find(CollisionCategory)->CurrentSocketLocation.Remove(TraceName);
+			TraceInfo.Find(CollisionCategory)->LastSocketLocation.Remove(TraceName);
+		}
+		//移除Mesh映射中的SocketName内容
+		for(auto & MeshInfo: StaticMeshComponentArray)
+		{
+			if(MeshInfo.Key->GetStaticMesh()&& MeshInfo.Key->GetStaticMesh()==AttachStaticMesh)
+			{
+				for(FName Name:TraceFollowName)
+				{
+					MeshInfo.Value.Remove(Name);
+				}
+				break;
+			}
+		}
+	}
+	TraceNum-=TraceFollowName.Num();
 }
 
 USkeletalMeshComponent* UAttackCollisionComponent::GetSkeletalMeshComponent()
@@ -41,14 +98,16 @@ USkeletalMeshComponent* UAttackCollisionComponent::GetSkeletalMeshComponent()
 	return SkeletalMeshComponent;
 }
 
-UStaticMeshComponent* UAttackCollisionComponent::GetStaticMeshComponent()
+TArray<TObjectPtr<UStaticMeshComponent>> UAttackCollisionComponent::GetStaticMeshComponent()
 {
-	return StaticMeshComponent;
+	TArray<TObjectPtr<UStaticMeshComponent>> MeshArray;
+	StaticMeshComponentArray.GetKeys(MeshArray);
+	return  MeshArray;
 }
 
-TArray<FName> UAttackCollisionComponent::GetSocketNames()
+TArray<FName> UAttackCollisionComponent::GetSocketNames(ECollisionType CollisionType)
 {
-	return SocketNames;
+	return TraceInfo.Find(CollisionType)?TraceInfo.Find(CollisionType)->SocketNames.Array():TArray<FName>();
 }
 void UAttackCollisionComponent::OnAttacktoTagretRecall(TArray<FHitResult> HitResults)
 {
@@ -72,7 +131,7 @@ void UAttackCollisionComponent::BeginPlay()
 void UAttackCollisionComponent::SetSkeletalMeshAndStaticMesh(USkeletalMeshComponent* SkeletalMesh,UStaticMeshComponent *StaticMesh)
 {
 	SkeletalMeshComponent=SkeletalMesh;
-	StaticMeshComponent=StaticMesh;
+	StaticMeshComponentArray.Add(StaticMesh);
 }
 
 void UAttackCollisionComponent::SetSkeletalMesh(USkeletalMeshComponent* SkeletalMesh)
@@ -81,7 +140,7 @@ void UAttackCollisionComponent::SetSkeletalMesh(USkeletalMeshComponent* Skeletal
 }
 void UAttackCollisionComponent::SetStaticMesh(UStaticMeshComponent* StaticMesh)
 {
-	StaticMeshComponent=StaticMesh;
+	StaticMeshComponentArray.Add(StaticMesh);
 }
 
 // Called every frame
@@ -95,52 +154,94 @@ void UAttackCollisionComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 
 void UAttackCollisionComponent::UpdateSocketLocation()
 {
-	if(!bStartTrace) return;
-	switch (CollisionType)
+	
+	if(TraceNum<=0) return;
+	if(TraceInfo.Find(ECollisionType::SkeletalMesh)&&TraceInfo.Find(ECollisionType::SkeletalMesh)->SocketNames.Num()>0)
 	{
-	case  ECollisionType::SkeletalMesh :
 		UpdateSkeletalMeshSocketLocation();
-		break;
-	case ECollisionType::StaticMesh:
-		UpdateStaticMeshSocketLocation();
-		break;
-	default:
-			break;
 	}
-	
-	
+	if(TraceInfo.Find(ECollisionType::StaticMesh)&&TraceInfo.Find(ECollisionType::StaticMesh)->SocketNames.Num()>0)
+	{
+		UpdateStaticMeshSocketLocation();
+	}
 }
+	
+
 void UAttackCollisionComponent::UpdateSkeletalMeshSocketLocation()
 {
-	if(!SkeletalMeshComponent) return ;
-		for(FName & SocketName:SocketNames)
+	if(!SkeletalMeshComponent ) return ;
+	TArray<FName> IgnoreName;
+		for(FName & SocketName:TraceInfo[ECollisionType::SkeletalMesh].SocketNames)
 		{
-			FVector SocketLocation=SkeletalMeshComponent->GetSocketLocation(SocketName);
-			if(LastSocketLocation.FindOrAdd(SocketName).IsNearlyZero())
+			if (!SkeletalMeshComponent->GetSocketByName(SocketName) && SkeletalMeshComponent->GetBoneIndex(SocketName) == INDEX_NONE)
 			{
-				LastSocketLocation.FindOrAdd(SocketName)=SocketLocation;
+				IgnoreName.Add(SocketName);
+				continue;
+			}
+
+			// 获取插槽位置
+			FVector SocketLocation = SkeletalMeshComponent->GetSocketLocation(SocketName);
+			// 缓存 TraceInfo 查找结果
+			auto* SkeletalMeshTraceInfo = TraceInfo.Find(ECollisionType::SkeletalMesh);
+			if (!SkeletalMeshTraceInfo) continue;
+			// 更新 LastSocketLocation 和 CurrentSocketLocation
+			FVector& LastLocation = SkeletalMeshTraceInfo->LastSocketLocation.FindOrAdd(SocketName);
+			FVector& CurrentLocation = SkeletalMeshTraceInfo->CurrentSocketLocation.FindOrAdd(SocketName);
+			if (LastLocation.IsNearlyZero())
+			{
+				LastLocation = SocketLocation;
 			}
 			else
 			{
-				LastSocketLocation.FindOrAdd(SocketName)=CurrentSocketLocation.FindOrAdd(SocketName);
+				LastLocation = CurrentLocation;
 			}
-			CurrentSocketLocation.FindOrAdd(SocketName)=SocketLocation;
+			CurrentLocation = SocketLocation;
+			
+		}
+		//移除不符合要求的Name
+		if(IgnoreName.Num()>0)
+		{
+		EndTrace(ECollisionType::SkeletalMesh,IgnoreName);
 		}
 }
 void UAttackCollisionComponent::UpdateStaticMeshSocketLocation()
-{	if(!StaticMeshComponent) return ;
-	for(FName & SocketName:SocketNames)
+{	if(StaticMeshComponentArray.Num()<=0 ) return ;
+	TArray<FName> IgnoreName;
+	for(auto MeshInfo: StaticMeshComponentArray)
 	{
-		FVector SocketLocation=StaticMeshComponent->GetSocketLocation(SocketName);
-		if(LastSocketLocation.FindOrAdd(SocketName).IsNearlyZero())
+		//更新信息
+		for(FName SocketName:MeshInfo.Value)
 		{
-			LastSocketLocation.FindOrAdd(SocketName)=SocketLocation;
+			if(!MeshInfo.Key->GetSocketByName(SocketName))
+			{
+				IgnoreName.Add(SocketName);
+				continue;
+			}
+			// 获取插槽位置
+			FVector SocketLocation = MeshInfo.Key->GetSocketLocation(SocketName);
+			// 缓存 TraceInfo 查找结果
+			auto* StaticMeshTraceInfo = TraceInfo.Find(ECollisionType::StaticMesh);
+			if (!StaticMeshTraceInfo) continue;
+
+			FVector& LastLocation = StaticMeshTraceInfo->LastSocketLocation.FindOrAdd(SocketName);
+			FVector& CurrentLocation = StaticMeshTraceInfo->CurrentSocketLocation.FindOrAdd(SocketName);
+
+			// 更新 LastSocketLocation 和 CurrentSocketLocation
+			if (LastLocation.IsNearlyZero())
+			{
+				LastLocation = SocketLocation;
+			}
+			else
+			{
+				LastLocation = CurrentLocation;
+			}
+			CurrentLocation = SocketLocation;
 		}
-		else
+		//移除不符合要求的Name
+		if(IgnoreName.Num()>0)
 		{
-			LastSocketLocation.FindOrAdd(SocketName)=CurrentSocketLocation.FindOrAdd(SocketName);
+			EndTrace(IgnoreName,ECollisionType::StaticMesh,MeshInfo.Key->GetStaticMesh());
 		}
-		CurrentSocketLocation.FindOrAdd(SocketName)=SocketLocation;
 	}
 }
 

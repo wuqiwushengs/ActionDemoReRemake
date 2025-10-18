@@ -73,6 +73,11 @@ void AActionPlayerCharacter::Tick(float DeltaTime)
 void AActionPlayerCharacter::OnInputMove(const FInputActionValue&  InputActionValue)
 {	CharacterNormalInputData.MoveInputValue=InputActionValue.Get<FVector2D>();
 	CheckPostAnimPlayAndStop();
+	ProcessMove(InputActionValue);
+}
+
+void AActionPlayerCharacter::ProcessMove(const FInputActionValue& InputActionValue)
+{
 	FRotator ControllRotation=GetControlRotation();
 	FVector ForwardVector=UKismetMathLibrary::GetForwardVector(ControllRotation);
 	ForwardVector.Normalize();
@@ -85,6 +90,11 @@ void AActionPlayerCharacter::OnInputMove(const FInputActionValue&  InputActionVa
 void AActionPlayerCharacter::OnInputLook(const FInputActionValue&  InputActionValue)
 {
 	CharacterNormalInputData.LookInputValue=InputActionValue.Get<FVector2d>();
+	ProcessLook(InputActionValue);
+}
+
+void AActionPlayerCharacter::ProcessLook(const FInputActionValue& InputActionValue)
+{
 	AddControllerYawInput(CharacterNormalInputData.LookInputValue.X*0.5);
 	AddControllerPitchInput(CharacterNormalInputData.LookInputValue.Y*0.5);
 }
@@ -108,6 +118,7 @@ void AActionPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 
 void AActionPlayerCharacter::OnAbilityInputTrigger(const FInputActionInstance& InputInfo, FGameplayTag InputData,ETriggerEvent TriggerEvent)
 {
+	UE_LOG(LogTemp,Warning,TEXT("%s"),*InputData.ToString());
 	if (TriggerEvent==ETriggerEvent::Started ||InputInfo.GetTriggerEvent()==ETriggerEvent::Completed)
 	{
 		ActionAbilitySystemComponent->AbilityInputDataLocalProcessing(InputInfo,InputData,GetInputDataAsset(),TriggerEvent);

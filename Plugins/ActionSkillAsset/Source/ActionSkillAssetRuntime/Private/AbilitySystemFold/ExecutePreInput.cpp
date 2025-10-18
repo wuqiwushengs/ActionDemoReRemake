@@ -13,7 +13,8 @@ void UExecutePreInput::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequen
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 	AActionPlayerCharacter * Character=Cast<AActionPlayerCharacter>(MeshComp->GetOwner());
 	if(!Character) return;
-	Character->GetActionAbilitySystemComponent()->AddLooseGameplayTag(GamePlayTags::ExecutePreInput);
+ 	Character->GetActionAbilitySystemComponent()->AddLooseGameplayTag(GamePlayTags::ExecutePreInput);
+	
 }
 
 void UExecutePreInput::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,

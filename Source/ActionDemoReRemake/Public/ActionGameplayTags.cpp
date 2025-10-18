@@ -1,0 +1,21 @@
+#include "ActionGameplayTags.h"
+
+namespace ActionGameplayTags
+{
+	//在这里解释所有的GameplayTag标签
+	ACTIONDEMOREREMAKE_API UE_DEFINE_GAMEPLAY_TAG(Move,"NativeInput.Move");
+	ACTIONDEMOREREMAKE_API UE_DEFINE_GAMEPLAY_TAG(Look,"NativeInput.Look");
+
+	//Skill标签
+	ACTIONDEMOREREMAKE_API UE_DEFINE_GAMEPLAY_TAG(RelaxAttack,"SkillTag.RelaxAttack")
+	ACTIONDEMOREREMAKE_API UE_DEFINE_GAMEPLAY_TAG(HeavyAttack,"SkillTag.HeavyAttack")
+	ACTIONDEMOREREMAKE_API UE_DEFINE_GAMEPLAY_TAG(Dash,"SkillTag.Dash");
+	ACTIONDEMOREREMAKE_API UE_DEFINE_GAMEPLAY_TAG(Defense,"SkillTag.Defense");
+	ACTIONDEMOREREMAKE_API UE_DEFINE_GAMEPLAY_TAG(PowerTag,"SkillTag.PowerAttack");
+
+	//完美闪避完美弹反
+	ACTIONDEMOREREMAKE_API UE_DEFINE_GAMEPLAY_TAG(PerfectSkill,"SkillTag.PerfectSkill")
+	//武器
+	ACTIONDEMOREREMAKE_API UE_DEFINE_GAMEPLAY_TAG(Sword,"WeaponTag.Sword")
+	ACTIONDEMOREREMAKE_API UE_DEFINE_GAMEPLAY_TAG(Gun,"WeaponTag.Gun")
+}

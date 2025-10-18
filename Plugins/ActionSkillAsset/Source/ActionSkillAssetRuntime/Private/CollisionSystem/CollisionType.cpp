@@ -67,7 +67,7 @@ TArray<FHitResult> FCollisionContext::GlobalTraceChannel(AActor* Tracer, FName S
 				, End,FQuat(),CollisionInfoSum.Channel,CollisionInfoSum.ShapeInfo.
 				GetCollisionShape(),QueryParam);
 			DebugTraceSweep(Tracer,HitResults,CollisionInfoSum,Start
-				,End,bHit);
+				,End,bHit,CollisionInfoSum.LinearColor);
 			
 		}
 		else
@@ -76,7 +76,7 @@ TArray<FHitResult> FCollisionContext::GlobalTraceChannel(AActor* Tracer, FName S
 				,End,FQuat(),CollisionInfoSum.Channel,CollisionInfoSum.ShapeInfo.
 				GetCollisionShape(),QueryParam);
 			DebugTraceSweepSingle(Tracer,SingleHitResult,CollisionInfoSum,Start
-				,End,bHit);
+				,End,bHit,CollisionInfoSum.LinearColor);
 			if(SingleHitResult.bBlockingHit)
 			{
 				HitResults.Add(SingleHitResult);
@@ -95,8 +95,8 @@ TArray<FHitResult> FCollisionContext::SkeletalMeshTraceChannel(AActor* Tracer, F
 	ICollisionSystemInterface * CSIReal=Cast<ICollisionSystemInterface>(CSI);
 		if(CSI &&CSIReal&& ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI))
 		{
-			FVector Start= ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->GetLastUpdateSocketLocation(SocketName);
-			FVector End= ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->GetCurrentUpdateSocketLocation(SocketName);
+			FVector Start= ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->GetLastUpdateSocketLocation(SocketName,ECollisionType::SkeletalMesh);
+			FVector End= ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->GetCurrentUpdateSocketLocation(SocketName,ECollisionType::SkeletalMesh);
 			if(Start.Equals(End)) return HitResults;
 			if(CollisionInfoSum.bMultiTrace)
 			{
@@ -106,13 +106,13 @@ TArray<FHitResult> FCollisionContext::SkeletalMeshTraceChannel(AActor* Tracer, F
 				{
 					HitResults.Append(Results);
 				}
-				DebugTraceSweep(Tracer,HitResults,CollisionInfoSum,Start,End,bHit);
+				DebugTraceSweep(Tracer,HitResults,CollisionInfoSum,Start,End,bHit,CollisionInfoSum.LinearColor);
 			}
 			else
 			{
 				FHitResult Result;
 				bool bHit=Tracer->GetWorld()->SweepSingleByChannel(Result,Start,End,FQuat(),CollisionInfoSum.Channel,CollisionInfoSum.GetCollisionShape(),QueryParam);
-				DebugTraceSweepSingle(Tracer,Result,CollisionInfoSum,Start,End,bHit);
+				DebugTraceSweepSingle(Tracer,Result,CollisionInfoSum,Start,End,bHit,CollisionInfoSum.LinearColor);
 				if(Result.bBlockingHit)
 				{
 					HitResults.Add(Result);
@@ -132,8 +132,8 @@ TArray<FHitResult> FCollisionContext::StaticMeshTraceChannel(AActor* Tracer, FNa
 	ICollisionSystemInterface * CSIReal=Cast<ICollisionSystemInterface>(CSI);
 		if(CSI && CSIReal&& ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI))
 		{
-			FVector Start= ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->GetLastUpdateSocketLocation(SocketName);
-			FVector End= ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->GetCurrentUpdateSocketLocation(SocketName);
+			FVector Start= ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->GetLastUpdateSocketLocation(SocketName,ECollisionType::StaticMesh);
+			FVector End= ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->GetCurrentUpdateSocketLocation(SocketName,ECollisionType::StaticMesh);
 			if(Start.Equals(End)) return HitResults;
 			if(CollisionInfoSum.bMultiTrace)
 			{
@@ -143,13 +143,13 @@ TArray<FHitResult> FCollisionContext::StaticMeshTraceChannel(AActor* Tracer, FNa
 				{
 					HitResults.Append(Results);
 				}
-				DebugTraceSweep(Tracer,HitResults,CollisionInfoSum,Start,End,bHit);
+				DebugTraceSweep(Tracer,HitResults,CollisionInfoSum,Start,End,bHit,CollisionInfoSum.LinearColor);
 			}
 			else
 			{
 				FHitResult Result;
 				bool bHit=Tracer->GetWorld()->SweepSingleByChannel(Result,Start,End,FQuat(),CollisionInfoSum.Channel,CollisionInfoSum.GetCollisionShape(),QueryParam);
-				DebugTraceSweepSingle(Tracer,Result,CollisionInfoSum,Start,End,bHit);
+				DebugTraceSweepSingle(Tracer,Result,CollisionInfoSum,Start,End,bHit,CollisionInfoSum.LinearColor);
 				if(Result.bBlockingHit)
 				{
 					HitResults.Add(Result);
@@ -158,7 +158,7 @@ TArray<FHitResult> FCollisionContext::StaticMeshTraceChannel(AActor* Tracer, FNa
 		}
 		return HitResults;
 }
-void FCollisionContext::DebugTraceSweep(AActor * Tracer,const TArray<FHitResult>& HitResults, const FCollisionInfoSum& CollisionInfoSum,const FVector & Start, const FVector & End,bool bHit)
+void FCollisionContext::DebugTraceSweep(AActor * Tracer,const TArray<FHitResult>& HitResults, const FCollisionInfoSum& CollisionInfoSum,const FVector & Start, const FVector & End,bool bHit,FLinearColor DebugColor)
 {	
 	
 	switch (CollisionInfoSum.ShapeInfo.CollisionShape)
@@ -167,23 +167,23 @@ void FCollisionContext::DebugTraceSweep(AActor * Tracer,const TArray<FHitResult>
 		{
 			FVector BoxExtend = FVector(CollisionInfoSum.ShapeInfo.BoxCollisionInfo);
 			DrawDebugBoxTraceMulti(Tracer->GetWorld(),Start,End,BoxExtend,FRotator(),CollisionInfoSum.DebugType,bHit,HitResults,
-				FLinearColor::Red,FLinearColor::Green,CollisionInfoSum.DebugTime);
+				DebugColor,FLinearColor::Green,CollisionInfoSum.DebugTime);
 			break;
 		}
 	case ECollisionShapeInfo::Capsule:
 		DrawDebugCapsuleTraceMulti(Tracer->GetWorld(),Start,End,CollisionInfoSum.ShapeInfo.CapsuleInfo.X,
-			CollisionInfoSum.ShapeInfo.CapsuleInfo.Y,CollisionInfoSum.DebugType,bHit,HitResults,FLinearColor::Red,FLinearColor::Green,CollisionInfoSum.DebugTime);
+			CollisionInfoSum.ShapeInfo.CapsuleInfo.Y,CollisionInfoSum.DebugType,bHit,HitResults,DebugColor,FLinearColor::Green,CollisionInfoSum.DebugTime);
 		break;
 	case ECollisionShapeInfo::Line:
-		DrawDebugLineTraceMulti(Tracer->GetWorld(),Start,End,CollisionInfoSum.DebugType,bHit,HitResults,FLinearColor::Red,FLinearColor::Green,CollisionInfoSum.DebugTime);
+		DrawDebugLineTraceMulti(Tracer->GetWorld(),Start,End,CollisionInfoSum.DebugType,bHit,HitResults,DebugColor,FLinearColor::Green,CollisionInfoSum.DebugTime);
 		break;
 	case ECollisionShapeInfo::Sphere:
 		DrawDebugSphereTraceMulti(Tracer->GetWorld(),Start,End,CollisionInfoSum.ShapeInfo.SphereRadiusInfo,
-			CollisionInfoSum.DebugType,bHit,HitResults,FLinearColor::Red,FLinearColor::Green,CollisionInfoSum.DebugTime);
+			CollisionInfoSum.DebugType,bHit,HitResults,DebugColor,FLinearColor::Green,CollisionInfoSum.DebugTime);
 		break;
 	}
 }
-void FCollisionContext::DebugTraceSweepSingle(AActor * Tracer,FHitResult & HitResults, const FCollisionInfoSum& CollisionInfoSum,const FVector & Start, const FVector & End,bool bHit)
+void FCollisionContext::DebugTraceSweepSingle(AActor * Tracer,FHitResult & HitResults, const FCollisionInfoSum& CollisionInfoSum,const FVector & Start, const FVector & End,bool bHit,FLinearColor DebugColor)
 {	
 	switch (CollisionInfoSum.ShapeInfo.CollisionShape)
 	{
@@ -196,14 +196,14 @@ void FCollisionContext::DebugTraceSweepSingle(AActor * Tracer,FHitResult & HitRe
 		}
 	case ECollisionShapeInfo::Capsule:
 		DrawDebugCapsuleTraceSingle(Tracer->GetWorld(),Start,End,CollisionInfoSum.ShapeInfo.CapsuleInfo.X,
-			CollisionInfoSum.ShapeInfo.CapsuleInfo.Y,CollisionInfoSum.DebugType,bHit,HitResults,FLinearColor::Red,FLinearColor::Green,CollisionInfoSum.DebugTime);
+			CollisionInfoSum.ShapeInfo.CapsuleInfo.Y,CollisionInfoSum.DebugType,bHit,HitResults,DebugColor,FLinearColor::Green,CollisionInfoSum.DebugTime);
 		break;
 	case ECollisionShapeInfo::Line:
-		DrawDebugLineTraceSingle(Tracer->GetWorld(),Start,End,CollisionInfoSum.DebugType,bHit,HitResults,FLinearColor::Red,FLinearColor::Green,CollisionInfoSum.DebugTime);
+		DrawDebugLineTraceSingle(Tracer->GetWorld(),Start,End,CollisionInfoSum.DebugType,bHit,HitResults,DebugColor,FLinearColor::Green,CollisionInfoSum.DebugTime);
 		break;
 	case ECollisionShapeInfo::Sphere:
 		DrawDebugSphereTraceSingle(Tracer->GetWorld(),Start,End,CollisionInfoSum.ShapeInfo.SphereRadiusInfo,
-			CollisionInfoSum.DebugType,bHit,HitResults,FLinearColor::Red,FLinearColor::Green,CollisionInfoSum.DebugTime);
+			CollisionInfoSum.DebugType,bHit,HitResults,DebugColor,FLinearColor::Green,CollisionInfoSum.DebugTime);
 		break;
 	}
 }

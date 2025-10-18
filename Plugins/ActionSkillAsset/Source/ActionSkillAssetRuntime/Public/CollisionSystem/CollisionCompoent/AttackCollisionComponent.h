@@ -15,6 +15,15 @@ struct FAttackedResult
 	UPROPERTY(BlueprintReadWrite)
 	AActor * Attacker;
 };
+
+struct FBaseMeshInfo
+{
+	TSet<FName> SocketNames;
+	TMap<FName,FVector> CurrentSocketLocation;
+	TMap<FName,FVector> LastSocketLocation;
+};
+
+
 enum class ECollisionType : uint8;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -27,20 +36,19 @@ public:
 	UAttackCollisionComponent();
 	
 	UFUNCTION(BlueprintCallable,BlueprintNativeEvent)
-	FVector GetLastUpdateSocketLocation(const FName & SocketName);
-	virtual FVector GetLastUpdateSocketLocation_Implementation( const FName & SocketName);
+	FVector GetLastUpdateSocketLocation(const FName & SocketName,ECollisionType CollisionType);
+	virtual FVector GetLastUpdateSocketLocation_Implementation( const FName & SocketName,ECollisionType CollisionType);
 	UFUNCTION(BlueprintCallable,BlueprintNativeEvent)
-	FVector GetCurrentUpdateSocketLocation(const FName & SocketName);
-	virtual FVector GetCurrentUpdateSocketLocation_Implementation(const FName & SocketName);
-	UFUNCTION(BlueprintCallable,BlueprintNativeEvent)
+	FVector GetCurrentUpdateSocketLocation(const FName & SocketName,ECollisionType CollisionType);
+	virtual FVector GetCurrentUpdateSocketLocation_Implementation(const FName & SocketName,ECollisionType CollisionType);
 	void  StartTrace(const TArray<FName> & TraceFollowName,ECollisionType CollisionCategory);
-	virtual void StartTrace_Implementation(const TArray<FName> & TraceFollowName,ECollisionType CollisionCategory);
-	UFUNCTION(BlueprintCallable,BlueprintNativeEvent)
-	void EndTrace();
-	virtual void EndTrace_Implementation();
+	void StartTrace(const TArray<FName> & TraceFollowName,ECollisionType CollisionCategory,UStaticMesh * AttachStaticMesh);
+	void EndTrace(ECollisionType CollisionType,const TArray<FName> & TraceFollowName);
+	void EndTrace(const TArray<FName> & TraceFollowName,ECollisionType CollisionCategory,UStaticMesh * AttachStaticMesh);
+	UFUNCTION(BlueprintCallable)
 	USkeletalMeshComponent * GetSkeletalMeshComponent();
-	UStaticMeshComponent * GetStaticMeshComponent();
-	TArray<FName> GetSocketNames();
+	TArray<TObjectPtr<UStaticMeshComponent>> GetStaticMeshComponent();
+	TArray<FName> GetSocketNames(ECollisionType CollisionType);
 	void OnAttacktoTagretRecall(TArray<FHitResult> HitResults);
 	
 protected:
@@ -48,15 +56,11 @@ protected:
 	void OnBeAttackedRecall(FAttackedResult AttackedResult);
 	// Called when the game starts
 	virtual void BeginPlay() override;
-	TArray<FName> SocketNames;
-	TMap<FName,FVector> CurrentSocketLocation;
-	TMap<FName,FVector> LastSocketLocation;
-	bool bStartTrace=false;
-	ECollisionType CollisionType;
+	TMap<ECollisionType,FBaseMeshInfo> TraceInfo;
+	int TraceNum;
 	UPROPERTY(BlueprintReadOnly)
-	USkeletalMeshComponent * SkeletalMeshComponent;
-	UPROPERTY(BlueprintReadOnly)
-	UStaticMeshComponent *StaticMeshComponent;
+	 USkeletalMeshComponent * SkeletalMeshComponent;
+	TMap<TObjectPtr<UStaticMeshComponent> ,TSet<FName>>StaticMeshComponentArray;
 	UFUNCTION(BlueprintCallable)
 	void SetSkeletalMeshAndStaticMesh(USkeletalMeshComponent *  SkeletalMesh,UStaticMeshComponent * StaticMesh);
 	UFUNCTION(BlueprintCallable)

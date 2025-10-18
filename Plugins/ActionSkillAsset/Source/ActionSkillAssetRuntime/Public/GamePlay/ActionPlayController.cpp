@@ -42,10 +42,12 @@ void AActionPlayController::RegisterInputAction(APawn * InPawn)
 	UActionInputComponent * ActionInputComponent=CastChecked<UActionInputComponent>(InputComponent);
 	EnhancedInputSubsystem->AddMappingContext(NormalMappingContext,1);
 	AActionPlayerCharacter * RefCharacter=Cast<AActionPlayerCharacter>(InPawn);
-	//NativeSkillBind
-	ActionInputComponent->BindAction(InputDataAsset->GetNativeInputActionByTag(GamePlayTags::Move),ETriggerEvent::Triggered,RefCharacter,&AActionPlayerCharacter::OnInputMove);
-	ActionInputComponent->BindAction(InputDataAsset->GetNativeInputActionByTag(GamePlayTags::Look),ETriggerEvent::Triggered,RefCharacter,&AActionPlayerCharacter::OnInputLook);
+	CustomNormalInputBinding(EnhancedInputSubsystem,ActionInputComponent,RefCharacter);
 	//AbilitySkillBind
 	EnhancedInputSubsystem->AddMappingContext(AbilityMappingContext,0);
 	ActionInputComponent->BindAbilityByFunction(InputDataAsset->AbilityInputData,RefCharacter,&AActionPlayerCharacter::OnAbilityInputTrigger);
+}
+
+void AActionPlayController::CustomNormalInputBinding(UEnhancedInputLocalPlayerSubsystem *InputSubsystem,UActionInputComponent * ActionInputComponent ,AActionPlayerCharacter * RefCharacter)
+{
 }

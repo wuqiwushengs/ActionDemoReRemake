@@ -23,7 +23,7 @@ UActionAbilitySystemComponent::UActionAbilitySystemComponent()
 void UActionAbilitySystemComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("UActionAbilitySystemComponent instance: %p"), this);
+
 	// ...
 	//绑定输入执行函数
 	InputExecuteDelegate.BindDynamic(this,&UActionAbilitySystemComponent::OnInputFinal);
@@ -78,14 +78,12 @@ void UActionAbilitySystemComponent::OnAbilityInputStart(const FInputActionInstan
 	FSkillTitle NewSkillTitle=FSkillTitle(EInputType::Press,WorldTime,InputTag);
 	//清除标记并且创建新的标记
 	InputDataMap.FindOrAdd(InputTag)=NewSkillTitle;
-	UE_LOG(LogTemp,Warning,TEXT("Start InputTag %s"),*InputTag.ToString())
 	FAbilityInputInfo AbilityInfo=FAbilityInputInfo(InputTag,WorldTime,InputTagsInBuff.Num()<=0?0:WorldTime-InputTagsInBuff[0].InputWorldTime,InputData.InputType);
-	UE_LOG(LogTemp,Warning,TEXT("PreInput"))
 	if(CheckImmediatelyInputIsAllowed(InputTag))
 	{
 		InputTagsInBuff.Empty();
 		bool IfBound=InputExecuteDelegate.ExecuteIfBound(AbilityInfo);
-		UE_LOG(LogTemp,Warning,TEXT("InputExecuteDelegate   Bind= %s"),IfBound ? TEXT("true") : TEXT("false"))
+
 		SetCurrentInputState(EInputState::DisableInputState);
 		
 	}
@@ -94,10 +92,8 @@ void UActionAbilitySystemComponent::OnAbilityInputStart(const FInputActionInstan
 	case  EInputState::PreInputState:
 		{
 #pragma region PreInputState
-			//立即执行的技能
-		
-		
 			//预输入内容
+			
 			if(!CheckPreInputIsAllowed(InputTag)) break;
 			InputTagsInBuff.Add(AbilityInfo);
 			//检测是否有执行的tag如果有那么就直接执行
@@ -107,7 +103,7 @@ void UActionAbilitySystemComponent::OnAbilityInputStart(const FInputActionInstan
 				if(FindExecuteAbilityInputInfo(InputTagsInBuff,FinalInputInfo))
 				{
 					bool IfBound=InputExecuteDelegate.ExecuteIfBound(FinalInputInfo);
-					UE_LOG(LogTemp,Warning,TEXT("InputExecuteDelegate   Bind= %s"),IfBound ? TEXT("true") : TEXT("false"))
+				
 				}
 				SetCurrentInputState(EInputState::DisableInputState);
 				InputTagsInBuff.Empty();
@@ -118,7 +114,7 @@ void UActionAbilitySystemComponent::OnAbilityInputStart(const FInputActionInstan
 	case  EInputState::NormalInputState:
 		{
 #pragma region  NormalInputState
-			UE_LOG(LogTemp,Warning,TEXT("NormalInput"))
+			
 			if (CheckInputLengthToSetInputLock(AbilityInfo.InputIntervalTime))
 			{
 				InputTagsInBuff.Add(AbilityInfo);
@@ -143,10 +139,10 @@ void UActionAbilitySystemComponent::OnAbilityInputStart(const FInputActionInstan
 			//用来在锁定后处理连续打击类型的技能
 			//TODO::这里未来可能会出现变成禁止输入导致没有办法
 			//用于连击时
-				UE_LOG(LogTemp,Warning,TEXT("DisableInput"))
 		USkillExecutorConfig * SkillConfig=SkillManager->SelectedSkillExecutorConfig;
 		if(SkillConfig && SkillConfig->ExecutorDescriptor.Executor && SkillConfig->ExecutorDescriptor.Executor->IsActive)
 		{
+			if(NewSkillTitle.InputTag!=SkillManager->SelectedSkillExecutorConfig->ExecutorDescriptor.TriggeredTag) return;
 			USkillExecutor * Executor=SkillConfig->ExecutorDescriptor.Executor;
 			Executor->OnSkillTrigger(NewSkillTitle);
 			
@@ -166,7 +162,8 @@ void UActionAbilitySystemComponent::OnAbilityInputEnd(const FInputActionInstance
 	//检查是否激活执行释放
 	if(SkillConfig && SkillConfig->ExecutorDescriptor.Executor && SkillConfig->ExecutorDescriptor.Executor->IsActive)
 	{
-		USkillExecutor * Executor=SkillConfig->ExecutorDescriptor.Executor;
+		if(Title->InputTag!=SkillManager->SelectedSkillExecutorConfig->ExecutorDescriptor.TriggeredTag) return;
+ 		USkillExecutor * Executor=SkillConfig->ExecutorDescriptor.Executor;
 		Executor->OnSkillTrigger(*Title);
 	}
 	//这里更改了一下将所有输入映射不删除只是改成按下或者释放。
@@ -254,7 +251,7 @@ void UActionAbilitySystemComponent::SetInputUnLock()
 {
 	SetCurrentInputState(EInputState::NormalInputState);
 		bool IfBound=InputUnlockDelegate.ExecuteIfBound();
-		UE_LOG(LogTemp,Warning,TEXT("InputExecuteDelegate   Bind= %s"),IfBound ? TEXT("true") : TEXT("false"))
+	
 }
 void UActionAbilitySystemComponent::CheckFinalInputAndCheckExecute()
 {
@@ -262,8 +259,7 @@ void UActionAbilitySystemComponent::CheckFinalInputAndCheckExecute()
 	if(FindExecuteAbilityInputInfo(InputTagsInBuff,FinalInputInfo))
 	{
 			bool IfBound=InputExecuteDelegate.ExecuteIfBound(FinalInputInfo);
-			UE_LOG(LogTemp,Warning,TEXT("InputExecuteDelegate   Bind= %s"),IfBound ? TEXT("true") : TEXT("false"))
-	}
+			}
 	InputTagsInBuff.Empty();
 	GetWorld()->GetTimerManager().ClearTimer(FinalInputTimer);
 	
@@ -348,7 +344,7 @@ void UActionAbilitySystemComponent::OnPreSkillExecute(FGameplayTag ExeTag, int C
 		if(FindExecuteAbilityInputInfo(InputTagsInBuff,FinalInputInfo))
 		{
 			InputExecuteDelegate.ExecuteIfBound(FinalInputInfo);
-			UE_LOG(LogTemp,Warning,TEXT("PreSkillExecute"))
+			
 		}
 		SetCurrentInputState(EInputState::DisableInputState);
 		InputTagsInBuff.Empty();
@@ -357,13 +353,28 @@ void UActionAbilitySystemComponent::OnPreSkillExecute(FGameplayTag ExeTag, int C
 
 void UActionAbilitySystemComponent::OnInputFinal(const FAbilityInputInfo& InputInfo)
 {
-	UE_LOG(LogTemp,Warning,TEXT("InputFinalExecute"))
-	FSkillTitle SkillTitle=*InputDataMap.Find(InputInfo.InputTag);
-	//这里因为断点可能出现执行的问题因此使用缓存Map,但是可能会在Complete哪里出现一些问题。
-	if(!SkillManager->TurnToNextSkillExecutor(ESkillReleaseType::Manual,SkillTitle))
+	
+	while (InputTagsInBuff.Num() > 0)
 	{
-		SetCurrentInputState(EInputState::NormalInputState);
+		FAbilityInputInfo HighestWeightInputInfo;
+		if (!FindExecuteAbilityInputInfo(InputTagsInBuff, HighestWeightInputInfo))
+		{
+			break; // 如果找不到权重最高的，直接退出
+		}
+		FSkillTitle SkillTitle = *InputDataMap.Find(HighestWeightInputInfo.InputTag);
+		// 尝试执行技能
+		if (SkillManager->TurnToNextSkillExecutor(ESkillReleaseType::Manual, SkillTitle))
+		{
+			// 成功执行，退出循环
+			return;
+		}
+		// 如果执行失败，从缓冲区中移除当前权重最高的输入
+		InputTagsInBuff.RemoveAll([&](const FAbilityInputInfo& InputInfo)
+		{
+			return InputInfo.InputTag == HighestWeightInputInfo.InputTag;
+		});
 	}
+	SetCurrentInputState(EInputState::NormalInputState);
 }
 
 

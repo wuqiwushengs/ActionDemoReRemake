@@ -19,10 +19,8 @@ UActionAbilitySystemComponent *USkillExecutor::GetOwnerAbilitySystemComponent()
 	return nullptr;
 }
 
-void USkillExecutor::SkillExecutorTickFunc()
+void USkillExecutor::SkillExecutorTickFunc(float DeltaTime)
 {
-	//目前只需要处理一个蓄力时间的问题。
-	
 	
 }
 
@@ -31,6 +29,7 @@ void USkillExecutor::InitializeSkill(FSkillTitle InputSkill,USkillManager * inSk
 	UE_LOG(LogTemp,Warning,TEXT("%s StartInitial Skill"),*GetName());
 	//记录当前的游戏时间和按键映射
 	CurrentTime=InputSkill.InputTime;
+	HoldSkill.HoldSkillInfo.CurrentHoldTime=0;
 	InitalPressInfo=InputSkill;
 	SkillManager=inSkillManager;
 	IsActive=true;
@@ -38,6 +37,8 @@ void USkillExecutor::InitializeSkill(FSkillTitle InputSkill,USkillManager * inSk
 	{
 		TVariant<TSubclassOf<USkillClip_PlayMontage>, TSubclassOf<USkillClipAbilityBase>> Clip;
 		Clip=FSkillContainer::MakeVariantSkill(HoldSkill.HoldSkillClass.GetCurrentSkill());
+		float IntervalTime=GWorld->GetTimeSeconds()-CurrentTime;
+		HoldSkill.HoldSkillInfo.CurrentHoldTime=IntervalTime;
 		PlayClip(Clip,TEXT("OnClipEnd"));
 		if (HoldSkill.PostHoldContent.IsValid())
 		{
@@ -121,7 +122,11 @@ void USkillExecutor::InitializeSkill(FSkillTitle InputSkill,USkillManager * inSk
 		}
 		
 	}
-	SkillManager->StartSkillDelegate.ExecuteIfBound(InputSkill.InputTag);
+	if(SkillManager->StartSkillDelegate.IsBound())
+	{
+		SkillManager->StartSkillDelegate.Broadcast(InputSkill.InputTag);
+	}
+	
 	
 }
 
@@ -176,7 +181,6 @@ void USkillExecutor::InitializeAbility(UActionAbilitySystemComponent * OwnerAbil
 //这个输入
 void USkillExecutor::OnSkillTrigger(FSkillTitle TriggerInput)
 {
-	
 	CurrentPressInfo=TriggerInput;
 	UE_LOG(LogTemp,Warning,TEXT(" initial %s post %s"),*InitalPressInfo.SkillInputId.ToString(),*TriggerInput.SkillInputId.ToString())
 	//这里判断的是蓄力和连击存在的情况,当松开时如果时间太小那么就直接走连击如果时间大于最小时间那么就走蓄力
@@ -269,8 +273,10 @@ void USkillExecutor::PlayClip(TVariant<TSubclassOf<USkillClip_PlayMontage>, TSub
 		{
 			PlayedMontage->AbilityEvent.BindUFunction(this,BindFunction);
 			PlayedMontage->OnEnterThisClip();
+			LastExeClip=PlayedMontage;
 		}
 		PlayedAbilitySpecHandle=FGameplayAbilitySpecHandle();
+		LastExeAbilitySpecHandle=FGameplayAbilitySpecHandle();
 	}
 	if (Clip.IsType<TSubclassOf<USkillClipAbilityBase>>())
 	{
@@ -279,8 +285,10 @@ void USkillExecutor::PlayClip(TVariant<TSubclassOf<USkillClip_PlayMontage>, TSub
 		{
 			GetOwnerAbilitySystemComponent()->TryActivateAbilityByClass(Clip.Get<TSubclassOf<USkillClipAbilityBase>>());
 			PlayedAbilitySpecHandle=Spec->Handle;
+			LastExeAbilitySpecHandle=Spec->Handle;
 		}
 		PlayedMontage=nullptr;
+		LastExeClip=nullptr;
 	}
 }
 
@@ -291,6 +299,9 @@ void USkillExecutor::ResetSkill()
 	CurrentPressInfo=FSkillTitle();
 	FinalSelectedSkillType=ESkillType::None;
 	CurrentTime=0.0;
+	HoldSkill.HoldSkillInfo.CurrentHoldTime=0;
+	LastExeClip=nullptr;
+	LastExeAbilitySpecHandle=FGameplayAbilitySpecHandle();
 	if (PlayedMontage)
 	{
 		PlayedMontage->OnExitThisClip();
@@ -302,7 +313,11 @@ void USkillExecutor::ResetSkill()
 		PlayedAbilitySpecHandle=FGameplayAbilitySpecHandle();
 	}
 	IsActive=false;
-	SkillManager->EndSkillDelegate.ExecuteIfBound(CurrentPressInfo.InputTag);
+	if(SkillManager->EndSkillDelegate.IsBound())
+	{
+		SkillManager->EndSkillDelegate.Broadcast(CurrentPressInfo.InputTag);
+	}
+	
 }
 
 void USkillExecutor::StopCurrentSkill(
@@ -316,6 +331,15 @@ void USkillExecutor::StopCurrentSkill(
 	{
 		GetOwnerAbilitySystemComponent()->CancelAbilityHandle(PlayedAbilitySpecHandle);
 	}
+}
+
+USkillManager* USkillExecutor::GetSkillManager()
+{
+	if(SkillManager.Get())
+	{
+		return SkillManager.Get();
+	}
+	return nullptr;
 }
 
 
