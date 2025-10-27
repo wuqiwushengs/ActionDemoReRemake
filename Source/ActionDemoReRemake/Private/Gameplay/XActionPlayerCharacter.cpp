@@ -2,7 +2,8 @@
 
 
 #include "ActionDemoReRemake/Public/Gameplay/XActionPlayerCharacter.h"
-
+#include "CameraManagerFold/ActionPlayerCameraManager.h"
+#include "GamePlay/ActionPlayController.h"
 
 // Sets default values
 AXActionPlayerCharacter::AXActionPlayerCharacter()
@@ -15,8 +16,34 @@ AXActionPlayerCharacter::AXActionPlayerCharacter()
 void AXActionPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	AActionPlayerCameraManager	* CameraManager=	Cast<AActionPlayerCameraManager>(PlayController->PlayerCameraManager);
+	if(CameraManager)
+	{
+		CameraManager->CameraModeBindSingleDelegate.BindUObject(this, &AXActionPlayerCharacter::GetSelectedCameraMode);
+	}
+}
+TSubclassOf<UActionCameraMode> AXActionPlayerCharacter::GetSelectedCameraMode()
+{
+	if(AimCamera)
+	{
+		if(AimCameraMode)
+		{
+			return AimCameraMode;
+		}
+		return nullptr;
+	}
+	else
+	{
+
+		if(TestCameraMode)
+		{
+			return TestCameraMode;
+		}
+		return nullptr;
+	}
 	
 }
+
 
 // Called every frame
 void AXActionPlayerCharacter::Tick(float DeltaTime)

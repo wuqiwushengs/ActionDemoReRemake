@@ -10,7 +10,8 @@ public class ActionDemoReRemake : ModuleRules
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "AnimationBlueprintLibrary" ,"MotionWarping", "Niagara","StateTreeModule" ,"GameplayStateTreeModule","AnimGraphRuntime", "InputCore", "EnhancedInput","GameplayAbilities","GameplayTags","GameplayTasks","ActionSkillAssetRuntime" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "AnimationBlueprintLibrary" ,"MotionWarping", "Niagara","StateTreeModule" ,"GameplayStateTreeModule","AnimGraphRuntime", "InputCore", "EnhancedInput","GameplayAbilities","GameplayTags"
+			,"GameplayTasks","ActionSkillAssetRuntime","ActionCameraSystemAsset" });
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

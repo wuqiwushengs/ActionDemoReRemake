@@ -10,6 +10,7 @@ public class ActionCameraSystemAsset : ModuleRules
             new string[]
             {
                 "Core",
+                "CinematicCamera",
             }
         );
 
@@ -22,11 +23,10 @@ public class ActionCameraSystemAsset : ModuleRules
                 "SlateCore",
                 "InputCore",
                 "EnhancedInput",
-                "CinematicCamera",
                 "GameplayTags",
                 "GameplayAbilities","GameplayTasks",
                 "UMG",
-                "DeveloperSettings"
+                "DeveloperSettings", "TemplateSequence"
             }
         );
     }

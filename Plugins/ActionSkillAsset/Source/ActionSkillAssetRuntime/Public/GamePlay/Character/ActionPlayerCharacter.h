@@ -41,10 +41,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
 	UActionAbilitySystemComponent * ActionAbilitySystemComponent;
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
-	USpringArmComponent * SpringArmComponent;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
-	UCameraComponent * CameraComponent;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
 	UAttackCollisionComponent * AttackCollisionComponent;
 	UPROPERTY()
 	AActionPlayController * PlayController;
@@ -67,4 +63,6 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	void OnAbilityInputTrigger(const FInputActionInstance& InputInfo ,FGameplayTag InputData,ETriggerEvent TriggerEvent) ;
+
+	
 };

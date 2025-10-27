@@ -2,7 +2,6 @@
 
 
 #include "ActionPlayerCharacter.h"
-
 #include "AbilitySystemComponent.h"
 #include "InputActionValue.h"
 #include "AbilitySystemFold/AbilitySystemCompoentRef/ActionAbilitySystemComponent.h"
@@ -21,12 +20,8 @@ AActionPlayerCharacter::AActionPlayerCharacter()
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	ActionAbilitySystemComponent=CreateDefaultSubobject<UActionAbilitySystemComponent>("ActionAbilitySystemComponent");
-	SpringArmComponent=CreateDefaultSubobject<USpringArmComponent>("SpringArmComponent");
-	CameraComponent=CreateDefaultSubobject<UCameraComponent>("CameraComponent");
 	AttackCollisionComponent=CreateDefaultSubobject<UAttackCollisionComponent>("AttackCollisionCompoent");
 	//TODO::临时使用后面对摄像机实行自定义方法。
-	SpringArmComponent->SetupAttachment(GetRootComponent());
-	CameraComponent->SetupAttachment(SpringArmComponent);
 }
 
 UAbilitySystemComponent* AActionPlayerCharacter::GetAbilitySystemComponent() const
@@ -61,6 +56,7 @@ void AActionPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	PlayController=Cast<AActionPlayController>(GetLocalViewingPlayerController());
+
 }
 
 

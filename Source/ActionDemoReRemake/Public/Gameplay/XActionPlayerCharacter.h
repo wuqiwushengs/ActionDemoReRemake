@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CameraModeFold/ActionCameraMode.h"
 #include "GamePlay/Character/ActionPlayerCharacter.h"
 #include "XActionPlayerCharacter.generated.h"
 
@@ -18,7 +19,14 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UActionCameraMode>   TestCameraMode;
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UActionCameraMode>   AimCameraMode;
+	UFUNCTION()
+	TSubclassOf<UActionCameraMode> GetSelectedCameraMode();
+	UPROPERTY(BlueprintReadWrite)
+	bool AimCamera;
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

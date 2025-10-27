@@ -12,7 +12,7 @@ class USkillExecutor;
 /**
  * 作为Skill技能的基类需要配合SkillClip使用，不能单独使用。所有的ability类执行的都是攻击那一刻的内容这里不播放前摇后摇，作为对之前Ability的改进
  */
-UCLASS()
+UCLASS(Abstract)
 class ACTIONSKILLASSETRUNTIME_API USkillClipAbilityBase : public UGameplayAbility,public ISkillClipTypeCheck
 {
 	GENERATED_BODY()

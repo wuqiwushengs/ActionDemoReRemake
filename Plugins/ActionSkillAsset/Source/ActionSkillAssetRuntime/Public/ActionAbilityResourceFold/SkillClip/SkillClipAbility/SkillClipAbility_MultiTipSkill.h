@@ -12,7 +12,7 @@ class UAbilityTask_PlayMontageAndWait;
 /**
  * 多次连续点击技能。
  */
-UCLASS()
+UCLASS(Abstract)
 class ACTIONSKILLASSETRUNTIME_API USkillClipAbility_MultiTipSkill : public USkillClipAbilityBase,public ISpecialAbilityInterface
 {
 	GENERATED_BODY()

@@ -29,13 +29,17 @@ void USkillManager::Initialize(UActionAbilitySystemComponent * AbilitySystem)
 
 void USkillManager::BindAbility()
 {
-	for (TPair<FGameplayTag,USkillExecutorDescriptorAsset *> Asset: SelectedSkillAssetSum->SKillExecutorAssets)
+	for(TPair<FGameplayTag,USkillExecutorDescriptorAssetSum *> AssetLink :SkillAssetSumLink->SkillExecutorSumLink)
 	{
-		for(USkillExecutorConfig * Config :Asset.Value->ExecutorConfigs)
+		for (TPair<FGameplayTag,USkillExecutorDescriptorAsset *> Asset: AssetLink.Value->SKillExecutorAssets)
 		{
-			TraverseSkillExecutorConfig(Config);
+			for(USkillExecutorConfig * Config :Asset.Value->ExecutorConfigs)
+			{
+				TraverseSkillExecutorConfig(Config);
+			}
 		}
 	}
+
 }
 void USkillManager::TraverseSkillExecutorConfig(USkillExecutorConfig* Config)
 {
@@ -351,7 +355,10 @@ void USkillManager::ChangeSkillAssetLinkTag(FGameplayTag SkillAssetTag)
 	bUsePreSelectedSkill=false;
 	StopAutoCheckChildrenSkillDirectly();
 	AutoSkillCheck.Empty();
-	SelectedSkillAssetSum=*SkillAssetSumLink->SkillExecutorSumLink.Find(SkillAssetTag);
+	if(SkillAssetSumLink&& SkillAssetSumLink->SkillExecutorSumLink.Find(SkillAssetTag))
+	{
+		SelectedSkillAssetSum=*SkillAssetSumLink->SkillExecutorSumLink.Find(SkillAssetTag);
+	}
 	if (bCheckAutoChildrenSkill)
 	{
 		FindCorrectSkillConfigsFromRoot(AutoSkillCheck,ESkillReleaseType::Auto);

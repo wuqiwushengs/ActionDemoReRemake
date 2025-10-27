@@ -12,7 +12,7 @@ class UAbilityTask_PlayMontageAndWait;
  * 
  */
 //长按的内容：
-UCLASS()
+UCLASS(Abstract)
 class ACTIONSKILLASSETRUNTIME_API USkillClipAbility_HoldSkill : public USkillClipAbilityBase,public ISpecialAbilityInterface
 {
 	GENERATED_BODY()

@@ -91,6 +91,7 @@ public:
 	//开始执行某个技能
 	void StartSelectedSkillConfig(USkillExecutorConfig * SelectedConfig,const FSkillTitle &InputInfo);
 	void SetSelectedSkillConfig(USkillExecutorConfig *	InSkillConfig);
+	UFUNCTION(BlueprintCallable)
 	void ShutdownCurrentSkillExecutor();
 	bool bCheckAutoChildrenSkill=false;
 #pragma  endregion
