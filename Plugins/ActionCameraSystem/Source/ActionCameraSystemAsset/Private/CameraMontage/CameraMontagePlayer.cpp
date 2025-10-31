@@ -278,6 +278,7 @@ UCameraMontageSequence* UCameraMontagePlayer::GetSequenceInstance(TSubclassOf<UC
 {
 	if(!SequenceClass) return nullptr;
 	UCameraMontageSequence *Sequence=nullptr;
+	//这里尝试进行性能优化但是Additive无法优化所以赋值object了
 	switch (SequenceClass->GetDefaultObject<UCameraMontageSequence>()->CameraAnimMontageInfo.CameraMontageType)
 	{
 	case ECameraMontagePlayType::Additive:
@@ -285,7 +286,7 @@ UCameraMontageSequence* UCameraMontagePlayer::GetSequenceInstance(TSubclassOf<UC
 		{
 			if(Var->GetClass()==SequenceClass)
 			{
-				return Var;
+				return DuplicateObject(Var,this);
 			}
 		}
 		Sequence=NewObject<UCameraMontageSequence>(this,SequenceClass);
@@ -296,7 +297,7 @@ UCameraMontageSequence* UCameraMontagePlayer::GetSequenceInstance(TSubclassOf<UC
 		{
 			if(Var->GetClass()==SequenceClass)
 			{
-				return Var;
+ 			return Var;
 			}
 		}
 		Sequence=NewObject<UCameraMontageSequence>(this,SequenceClass);
