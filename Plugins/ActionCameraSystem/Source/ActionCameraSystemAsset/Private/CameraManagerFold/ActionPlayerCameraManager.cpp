@@ -6,6 +6,7 @@
 #include "Camera/CameraComponent.h"
 #include "CameraComponentFold/CameraComponentInterface.h"
 #include "CameraComponentFold/UActionUiCameraComponent.h"
+#include "CameraComponentFold/CameraMontage/CameraMontagePlayer.h"
 #include "CameraDataFold/ActionCameraTypes.h"
 #include "CameraModeFold/ActionCameraMode.h"
 #include "Engine/Canvas.h"
@@ -24,6 +25,11 @@ void AActionPlayerCameraManager::InitializeFor(class APlayerController* PC)
 	{
 		CameraStack=NewObject<UActionCameraStack>(this);
 		check(CameraStack);
+	}
+	if(!CameraMontagePlayer)
+	{
+		check(MontagePlayerClass)
+		CameraMontagePlayer=NewObject<UCameraMontagePlayer>(this,MontagePlayerClass);
 	}
 }
 
@@ -197,16 +203,16 @@ void AActionPlayerCameraManager::UpdateActionCameraValue(FMinimalViewInfo & OutP
 	CameraStack->EvaluateStack(DeltaTime,StackViewInfo);
 	StackViewInfo.CameraLocation+=FRotationMatrix(StackViewInfo.CameraRotation).TransformVector(CameraViewLocationOffset);
 	OutPOV.FOV+=CameraViewFovOffset;
+	CameraNormalViewInfoCache=StackViewInfo;
 	//摄像机延迟变换的更新
 	UpdateCameraLag(StackViewInfo,DeltaTime);
-	CameraNormalViewInfoCache=StackViewInfo;
 	bFirst=false;	
-	
 	//摄像机蒙太奇的更新
-
-
+	CameraMontagePlayer->UpdateCameraMontagePlay(DeltaTime,StackViewInfo,CameraNormalViewInfoCache);
 	//摄像机避障处理的更新
 
+	//给摄像机的缓存赋值。
+	CameraMontageViewInfoCache=StackViewInfo;
 	//给摄像机赋值
 	OutPOV.Location=StackViewInfo.CameraLocation;
 	OutPOV.Rotation=StackViewInfo.CameraRotation;
@@ -285,6 +291,7 @@ void AActionPlayerCameraManager::DisplayDebug(class UCanvas* Canvas, const class
 	ECameraForm CameraForm;
 	DisplayDebugManager.DrawString(FString::Printf(TEXT("CurrentCameraName: %s"),*GetCurrentActiveCameraComponent(CameraForm)->GetName()));
 	CameraStack->DrawDebug(Canvas);
+	CameraMontagePlayer->DisplayDebug(Canvas);
 }
 #pragma endregion
 

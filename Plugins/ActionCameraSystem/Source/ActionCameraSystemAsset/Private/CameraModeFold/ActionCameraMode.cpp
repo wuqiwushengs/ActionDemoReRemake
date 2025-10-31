@@ -96,8 +96,7 @@ void UActionCameraMode::UpdateBlendWeight(float DeltaTime)
 			BlendCurve=BlendCurveInfo.bUseRuntimeCurve?BlendCurveInfo.CustomBlendCurve.ExternalCurve.Get():BlendCurveInfo.BlendCurve;
 		}
 		//进行权重混合
-		float PowValue=FMath::Pow(BlendAlpha,BlendCurveInfo.BlendExp);
-		BlendWeight=CameraData::BlendInfo::GetBlendWeightFromBlendFunction(BlendCurveInfo.BlendFunction,
+		BlendWeight=CameraData::BlendInfo::GetBlendWeightFromBlendInFunction(BlendCurveInfo.BlendFunction,
 			BlendCurve,BlendAlpha,BlendCurveInfo.BlendExp);
 		BlendWeight=FMath::Min(BlendWeight,1);
 		if(BlendWeight>=1) {CurrentBlendMode=EBlendType::Loop; return;}
@@ -141,7 +140,7 @@ void UActionCameraMode::SetBlendWeight(EBlendType BlendType,float Weight)
 		//这里是反向推导Alpha所以需要反过来。
 		BlendWeight=FMath::Clamp(Weight,0,1);
 		float InvExponent=(BlendCurveInfo.BlendExp>0.0f)?(1.0f/BlendCurveInfo.BlendExp):1.0f;
-		BlendAlpha=CameraData::BlendInfo::GetBlendWeightFromBlendFunction(BlendCurveInfo.BlendFunction,BlendCurveInfo.BlendCurve,BlendWeight,InvExponent	);
+		BlendAlpha=CameraData::BlendInfo::GetBlendWeightFromBlendInFunction(BlendCurveInfo.BlendFunction,BlendCurveInfo.BlendCurve,BlendWeight,InvExponent	);
 		BlendAlpha=FMath::Min(BlendWeight,1);
 	}
 }

@@ -19,7 +19,7 @@ namespace CameraData
 	namespace  BlendInfo
 	{
 		/*该函数用了两个浮点一个是混合混合强度通常用时间的比率来算，另外一个是混合强度仅仅用在了EaseIn,EaseOut以及EaseInOut当中,如果用了自定义曲线并且没有曲线的话就会用线性模式*/
-		static float GetBlendWeightFromBlendFunction(EActionCameraBlendFunction BlendFunction,UCurveFloat * BlendCurve ,float BlendAlpha,float BlendExp=1)
+		static float GetBlendWeightFromBlendInFunction(EActionCameraBlendFunction BlendFunction,UCurveFloat * BlendCurve ,float BlendAlpha,float BlendExp=1)
 		{
 			switch (BlendFunction)
 			{
@@ -39,6 +39,30 @@ namespace CameraData
 				return BlendCurve?BlendCurve->GetFloatValue(BlendAlpha):BlendAlpha;
 			default:
 				return  BlendAlpha;
+				break;
+			}
+		}
+		//这个函数的曲线必须是向下的
+		static float GetBlendWeightFromBlendOutFunction(EActionCameraBlendFunction BlendFunction,UCurveFloat * BlendCurve ,float BlendAlpha,float BlendExp=1)
+		{
+			switch (BlendFunction)
+			{
+			case	EActionCameraBlendFunction::Linear :
+				return FMath::Lerp(0.f,1.f,1-BlendAlpha);
+			case EActionCameraBlendFunction::Cubic :
+				return FMath::CubicInterp(0.f,0.f,1.f,0.f,1-BlendAlpha);
+			case EActionCameraBlendFunction::EaseIn :
+				return FMath::Lerp(1.f,0.f,FMath::Pow(BlendAlpha,BlendExp)); 
+			case EActionCameraBlendFunction::EaseOut:
+				return  FMath::Lerp(0.f,1.f,FMath::Pow(1-BlendAlpha,BlendExp)); 
+			case EActionCameraBlendFunction::EaseInOut:
+				return FMath::InterpEaseInOut(1.f,0.f,BlendAlpha,BlendExp);
+			case EActionCameraBlendFunction::PreBlend:
+				return 0.0f;
+			case EActionCameraBlendFunction::CustomCurve:
+				return BlendCurve?BlendCurve->GetFloatValue(BlendAlpha):BlendAlpha;
+			default:
+				return  1-BlendAlpha;
 				break;
 			}
 		}
@@ -63,7 +87,7 @@ struct FBlendCurveInfo
 	UPROPERTY(EditDefaultsOnly)
 	EActionCameraBlendFunction BlendFunction;
 	/*混合强度仅仅用在了EaseIn,EaseOut以及EaseInOut当中*/
-	UPROPERTY(EditDefaultsOnly,meta=(EditCondition="!UseCustomCurve"))
+	UPROPERTY(EditDefaultsOnly,meta=(EditCondition="!bUseCustomCurve"))
 	float BlendExp=1.0f;
 };
 

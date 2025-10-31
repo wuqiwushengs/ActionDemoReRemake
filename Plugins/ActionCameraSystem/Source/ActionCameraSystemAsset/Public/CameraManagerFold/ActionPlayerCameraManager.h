@@ -7,6 +7,7 @@
 #include "CameraModeFold/ActionCameraStack.h"
 #include "ActionPlayerCameraManager.generated.h"
 
+class UCameraMontagePlayer;
 class UActionUiCameraComponent;
 struct FActionCameraNormalViewInfo;
 struct FGameplayTag;
@@ -24,10 +25,14 @@ class ACTIONCAMERASYSTEMASSET_API AActionPlayerCameraManager : public APlayerCam
 	GENERATED_BODY()
 public:
 	AActionPlayerCameraManager();
-	virtual void InitializeFor(class APlayerController* PC) override;
-	virtual void BeginPlay() override;
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UCameraMontagePlayer> MontagePlayerClass;
+	UPROPERTY(Transient)
+	UCameraMontagePlayer * CameraMontagePlayer;
+	UPROPERTY(Transient)
 	UActionCameraStack * CameraStack;
+	UFUNCTION(BlueprintCallable,BlueprintPure)
+	UCameraMontagePlayer * GetCameraMontagePlayer() {return CameraMontagePlayer;}
 	/*你可以预先在玩家组件中添加摄像机,摄像机管理器中会自动添加相机内容，也可以直接赋值*/
 	TMap<ECameraForm, UCameraComponent *> OwnedCamera;
 	UPROPERTY(EditAnywhere,BlueprintReadOnly)
@@ -48,12 +53,17 @@ public:
 	void AddCameraOffset(FVector NewOffset,float FovOffset) ;
 	FVector CameraViewLocationOffset;
 	float CameraViewFovOffset;
+	//需要的内容需要绑定到这个位置
+	FCameraModeDelegate CameraModeBindSingleDelegate;
+private:
+	virtual void InitializeFor(class APlayerController* PC) override;
+	virtual void BeginPlay() override;
 	//在CameraStack中更新位置数据是进行Interp处理。
 	virtual void UpdateViewTarget(FTViewTarget& OutVT, float DeltaTime) override;
 	void UpdateCameraModes();
-	FCameraModeDelegate CameraModeBindSingleDelegate;
 	void UpdateActionCameraValue(FMinimalViewInfo  &OutPOV,float DeltaTime);
 	void UpdateCameraLag(FActionCameraNormalViewInfo &ActionCameraNormalViewInfo,float DeltaTime);
+public:
 	UPROPERTY(EditDefaultsOnly)
 	bool bDoRotationLag;
 	UPROPERTY(EditDefaultsOnly)
@@ -69,7 +79,7 @@ public:
 	bool bUseCameraTimeStep;
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,meta=(EditCondition="bUseCameraTimeStep",ClampMin="0.005",ClampMax="0.5",UIMin="0.005",UIMax="0.5"))
 	float CameraLagMaxTimeStep;
-	
+	FActionCameraNormalViewInfo GetLastUpdateCameraNormalViewInfo() { return CameraNormalViewInfoCache;}
 #pragma region Debug
 	virtual void DisplayDebug(class UCanvas* Canvas, const class FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos) override;
 #pragma  endregion
@@ -86,6 +96,7 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	APawn * ControlledPlayer;
 private:
+	FActionCameraNormalViewInfo CameraMontageViewInfoCache;
 	FActionCameraNormalViewInfo CameraNormalViewInfoCache;
 #pragma region  SceneColorChange
 public:

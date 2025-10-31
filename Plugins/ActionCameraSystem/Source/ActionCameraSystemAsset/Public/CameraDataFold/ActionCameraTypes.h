@@ -1,6 +1,6 @@
 #pragma once
 #include "BlendData.h"
-#include "CineCameraSettings.h"
+#include "CameraAnimationSequencePlayer.h"
 #include "GameplayTagContainer.h"
 #include "ActionCameraTypes.generated.h"
 /*这两个宏可以直接用 但是用完记得将宏解开 UBT不支持通过宏编写UClass类型*/
@@ -28,7 +28,7 @@ class UCameraAnimationSequence;
 class UCurveVector;
 namespace  CameraGlobalFunc
 {
-	static AActionPlayerCameraManager * TryGetPlayerCameraManager(const AActor *  Owner);
+	 AActionPlayerCameraManager * TryGetPlayerCameraManager(const AActor *  Owner);
 	static  void BlendPivot(FVector & CurrentPivot,FVector OtherPivot,float PivotWeight)
 	{
 		if(PivotWeight<=0.0f)
@@ -47,13 +47,26 @@ USTRUCT(BlueprintType)
 struct FActionCameraNormalViewInfo
 {
 	GENERATED_BODY()
+	FActionCameraNormalViewInfo()=default;
+	FActionCameraNormalViewInfo(const FActionCameraNormalViewInfo &ViewInfo)
+	{
+		CameraLocation=ViewInfo.CameraLocation;
+		CameraRotation=ViewInfo.CameraRotation;
+		FOV=ViewInfo.FOV;
+	};
+	FActionCameraNormalViewInfo(const FVector & Location, const FRotator & Rotation,const float & Fov)
+	{
+		CameraLocation=Location;
+		CameraRotation=Rotation;
+		FOV=Fov;
+	};
 	virtual ~FActionCameraNormalViewInfo()=default;
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
-	FVector CameraLocation;
+	FVector CameraLocation=FVector(0,0,0);
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
-	FRotator CameraRotation;
+	FRotator CameraRotation=FRotator(0,0,0);
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
-	float FOV;
+	float FOV=0.0f;
 
 	virtual FActionCameraNormalViewInfo operator+(const FActionCameraNormalViewInfo & Other) const 
 	{
@@ -125,6 +138,14 @@ struct FCameraSpringArmInfo
 };
 #pragma  region CameraMontage
 UENUM(BlueprintType)
+enum class ECameraMontageBlendType:uint8
+{
+	WaitAdd,
+	BlendIn,
+	Loop,
+	BlendOut,
+};
+UENUM(BlueprintType)
 enum class  ECameraMontagePlayType:uint8
 {
 	Additive,
@@ -136,6 +157,15 @@ enum class  ECameraMontageType:uint8
 	FixTransform,
 	CurveMontage,
 	AnimSequenceMontage,
+};
+
+UENUM(BlueprintType)
+enum class EAdditiveType:uint8
+{
+	WorldLocation,
+	CameraLocation,
+	TargetActorLocation,
+	CameraToTargetLocation,
 };
 USTRUCT(BlueprintType)
 struct FCameraMontageFixedModifyInfo
@@ -154,16 +184,42 @@ struct FCameraMontageCurve
 	TObjectPtr<UCurveVector> RotationInfo;
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UCurveFloat> FovInfo;
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UCurveVector> ControlRotationInfo;
 };
-
 USTRUCT(BlueprintType)
-struct FCameraMontageSequence
+struct FCameraMontageSequenceInfo
 {
 	GENERATED_BODY()
+	//制作相机序列的时候需要注意默认的相机原点位置必须为0 也就是世界原点，不然计算会出错。
+	//相机序列的制作数据可以直接从动画序列中复制粘贴因此不一定非要用相机序列来制作。
 	UPROPERTY(EditDefaultsOnly)
 	UCameraAnimationSequence * CameraSequence;
+private:
+	//这两个用作缓存
+	UPROPERTY(Transient)
+	UCameraAnimationSequenceCameraStandIn *CameraStandInInstance=nullptr;
+	UPROPERTY(Transient)
+	UCameraAnimationSequencePlayer * SequencePlayerInstance=nullptr;
+public:
+	UCameraAnimationSequenceCameraStandIn * GetCameraStandInInstance(UObject * Owner)
+	{
+			if(!CameraStandInInstance)
+			{
+				check(Owner)
+				CameraStandInInstance=NewObject<UCameraAnimationSequenceCameraStandIn>(Owner);
+			}
+		return CameraStandInInstance;
+	}
+	UCameraAnimationSequencePlayer * GetCameraAnimationSequencePlayerInstance(UObject * Owner)
+	{
+		if(!SequencePlayerInstance)
+		{
+			check(Owner)
+			SequencePlayerInstance=NewObject<UCameraAnimationSequencePlayer>(Owner);
+		}
+		return SequencePlayerInstance;
+	}
+	void  InitializeCameraSequence(UObject * Owner);
+	void GetCameraDataAtTime(float TimeInSeconds,FMinimalViewInfo & OutCameraData);
 };
 USTRUCT(BlueprintType)
 struct FCameraMontageInfo
@@ -174,7 +230,7 @@ struct FCameraMontageInfo
 	UPROPERTY(EditDefaultsOnly,meta=(EditCondition="MontageType==ECameraMontageType::FixTransform",EditConditionHides))
 	FCameraMontageFixedModifyInfo FixedRelativeTransformInfo;
 	UPROPERTY(EditDefaultsOnly,meta=(EditCondition="MontageType==ECameraMontageType::AnimSequenceMontage",EditConditionHides))
-	FCameraMontageSequence CameraSequence;
+	FCameraMontageSequenceInfo CameraSequence;
 	UPROPERTY(EditDefaultsOnly,meta=(EditCondition="MontageType==ECameraMontageType::CurveMontage",EditConditionHides))
 	FCameraMontageCurve MontageCurve;
 	UPROPERTY(EditDefaultsOnly)
@@ -187,22 +243,30 @@ struct FCameraMontageInfo
 	bool bLoop=false;
 };
 /*允许有多个MontagePlay*/
+UENUM(BlueprintType)
+enum  class EMontageSocketType:uint8
+{
+	CharacterBoneSocket,
+	CharacterSocket,
+};
+
 USTRUCT(BlueprintType)
 struct FCameraAnimMontagePlay
 {
 	GENERATED_BODY()
-	//如果相机模式是Additive那么PlayerOwner必须是拥有相机的那位
-	//如果相机模式是Modify那么PlayerOwner可以是另外一个角色 这个Modify是相对于角色或者插槽的位置来说的，但是其旋转为了正确设定根据其角色的旋转来作为modify的基础。
+	
+	//如果相机模式是Modify, 这个Modify是相对于角色或者插槽的位置来说的，但是其旋转为了正确设定根据其角色的旋转来作为modify的基础。
 	UPROPERTY(EditDefaultsOnly)
 	ECameraMontagePlayType CameraMontageType;
+	UPROPERTY(EditDefaultsOnly,meta=(EditCondition="CameraMontageType==ECameraMontagePlayType::Additive",EditConditionHides))
+	EAdditiveType AdditiveType;
 	UPROPERTY(EditDefaultsOnly)
 	FCameraMontageInfo MontageInfo;
-	UPROPERTY(BlueprintReadWrite,Transient)
-	AActor *  PlayOwner;
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
 	FName SocketName;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	EMontageSocketType SocketType;
 };
-
 USTRUCT(BlueprintType)
 struct FCameraAnimMontagePlayPair:public  FTableRowBase
 {

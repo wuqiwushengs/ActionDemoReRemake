@@ -9,16 +9,17 @@ public class ActionCameraSystemAsset : ModuleRules
         PublicDependencyModuleNames.AddRange(
             new string[]
             {
-                "Core",
-                "CinematicCamera",
+                "Core","CinematicCamera",
+                "TemplateSequence","MovieScene","MovieSceneTracks","LevelSequence"
+                ,"TimeManagement","CoreUObject",
+                "Engine",
             }
         );
 
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
-                "CoreUObject",
-                "Engine",
+                
                 "Slate",
                 "SlateCore",
                 "InputCore",
@@ -26,7 +27,7 @@ public class ActionCameraSystemAsset : ModuleRules
                 "GameplayTags",
                 "GameplayAbilities","GameplayTasks",
                 "UMG",
-                "DeveloperSettings", "TemplateSequence"
+                "DeveloperSettings", 
             }
         );
     }
