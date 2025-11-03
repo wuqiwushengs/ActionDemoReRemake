@@ -94,7 +94,6 @@ struct FActionCameraNormalViewInfo
 		FQuat TargetCameraQuat = OtherCameraViewInfo.CameraRotation.Quaternion();
 		FQuat InterpolatedCameraQuat = FQuat::Slerp(CurrentCameraQuat, TargetCameraQuat, BlendWeight);
 		CameraRotation = InterpolatedCameraQuat.Rotator();
-
 		FOV=FMath::Lerp(FOV,OtherCameraViewInfo.FOV,BlendWeight);
 			
 	};
@@ -193,6 +192,8 @@ struct FCameraMontageSequenceInfo
 	//相机序列的制作数据可以直接从动画序列中复制粘贴因此不一定非要用相机序列来制作。
 	UPROPERTY(EditDefaultsOnly)
 	UCameraAnimationSequence * CameraSequence;
+	UPROPERTY(EditDefaultsOnly)
+	UCurveFloat * FovCurve;
 private:
 	//这两个用作缓存
 	UPROPERTY(Transient)
@@ -219,7 +220,7 @@ public:
 		return SequencePlayerInstance;
 	}
 	void  InitializeCameraSequence(UObject * Owner);
-	void GetCameraDataAtTime(float TimeInSeconds,FMinimalViewInfo & OutCameraData);
+	void GetCameraDataAtTime(float TimeInSeconds,FMinimalViewInfo & OutCameraData,UObject * Owner=nullptr);
 };
 USTRUCT(BlueprintType)
 struct FCameraMontageInfo

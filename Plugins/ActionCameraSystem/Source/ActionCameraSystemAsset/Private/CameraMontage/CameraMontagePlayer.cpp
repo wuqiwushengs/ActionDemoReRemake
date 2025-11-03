@@ -23,7 +23,8 @@ namespace ActionViewInterp
 		}
 		if(bRotationInterp)
 		{
-			CameraRotation=FRotator(FMath::QInterpTo(  FQuat(FromViewInfo.CameraRotation),FQuat(ToViewInfo.CameraRotation.Quaternion()),DeltaTime,InterpRotationSpeed));
+			CameraRotation=FMath::RInterpTo(  FromViewInfo.CameraRotation,ToViewInfo.CameraRotation,DeltaTime,InterpRotationSpeed);
+		
 		}
 		else
 		{
@@ -69,6 +70,25 @@ void UCameraMontageSequence::SetBlendType(ECameraMontageBlendType BlendType)
 		break;
 	}
 }
+
+void UCameraMontageSequence::OnDeactivate()
+{
+	if(CameraAnimMontageInfo.MontageInfo.MontageType==ECameraMontageType::AnimSequenceMontage&&CameraAnimMontageInfo.MontageInfo.CameraSequence.CameraSequence)
+	{
+		CameraAnimMontageInfo.MontageInfo.CameraSequence.GetCameraAnimationSequencePlayerInstance(this)->Stop();
+	}
+	
+}
+
+void UCameraMontageSequence::OnActive()
+{
+	if(CameraAnimMontageInfo.MontageInfo.MontageType==ECameraMontageType::AnimSequenceMontage)
+	{
+		CameraAnimMontageInfo.MontageInfo.CameraSequence.InitializeCameraSequence(this);
+		CameraAnimMontageInfo.MontageInfo.CameraSequence.GetCameraAnimationSequencePlayerInstance(this)->Play(true,false);
+	}
+}
+
 void UCameraMontageSequence::UpdateCameraMontageSequence(float DeltaTime,FActionCameraNormalViewInfo & MontageViewInfo)
 {
 	UpdateMontageInfo(DeltaTime, MontageViewInfo);
@@ -108,7 +128,7 @@ void UCameraMontageSequence::UpdateMontageInfo(float DeltaTime,FActionCameraNorm
 {
 	//通过工具进行蒙太奇内容的更新
 	UCameraMontagePlayer * Player=Cast<UCameraMontagePlayer>(GetOuter());
-	FActionCameraNormalViewInfo ViewInfo;
+	FActionCameraNormalViewInfo ViewInfo=MontageViewInfo;
 	Player->GetCameraMontageValueCalculateFactory()->CalculateMontageValue(ViewInfo,this,CameraAnimMontageInfo.CameraMontageType,CurrentBlendWeight);
 	MontageViewInfo=ViewInfo;
 }
@@ -120,7 +140,7 @@ void UCameraMontageSequence::UpdateBlendInfo(float DeltaTime)
 	if(CameraMontageBlendType==ECameraMontageBlendType::Loop)
 	{
 		if(CameraAnimMontageInfo.MontageInfo.bLoop) return;
-		if(PlayedTime>=CameraAnimMontageInfo.MontageInfo.DurationTime)
+		if(PlayedTime>=(CameraAnimMontageInfo.MontageInfo.DurationTime-CameraAnimMontageInfo.MontageInfo.BlendInfo.BlendOutCurveInfo.BlendTime))
 		{
 			SetBlendType(ECameraMontageBlendType::BlendOut);
 			return;
@@ -237,6 +257,7 @@ void UCameraMontagePlayer::PushAdditiveMontage(UCameraMontageSequence* Sequence)
 {
 	CameraMontagePlayAdditiveStack.Insert(Sequence,0);
 	Sequence->SetBlendType(ECameraMontageBlendType::BlendIn);
+	Sequence->OnActive();
 }
 void UCameraMontagePlayer::PushModifyMontage(UCameraMontageSequence* Sequence)
 {
@@ -248,11 +269,13 @@ void UCameraMontagePlayer::PushModifyMontage(UCameraMontageSequence* Sequence)
 		CameraMontagePlayModifyStack=Sequence;
 		Sequence->SetBlendType(ECameraMontageBlendType::BlendIn);
 		Sequence->OnActive();
+		
 }
 void UCameraMontagePlayer::UpdateCameraMontageStack(float DeltaTime)
 {
 	if(CameraMontagePlayModifyStack&& CameraMontagePlayModifyStack->GetBlendType()==ECameraMontageBlendType::WaitAdd)
 	{
+		CameraMontagePlayModifyStack->OnDeactivate();
 		CameraMontagePlayModifyStack=nullptr;
 	}
 	TSet<int> RemoveIndex;
@@ -269,6 +292,7 @@ void UCameraMontagePlayer::UpdateCameraMontageStack(float DeltaTime)
 		if(RemoveIndex.Num()<=0) return;
 		for (int index:RemoveIndex)
 		{
+			CameraMontagePlayAdditiveStack[index]->OnDeactivate();
 			CameraMontagePlayAdditiveStack.RemoveAt(index);
 		}
 	}
@@ -326,6 +350,8 @@ void UCameraMontagePlayer::UpdateCameraMontagePlay(float DeltaTime, FActionCamer
 	UpdateCameraMontageModifyPlay(DeltaTime,ModifyViewInfo,NormalViewInfoCache);
 	UpdateCameraMontageAdditivePlay(DeltaTime,AdditiveWorldViewInfo);
 	ProcessFindChangedMontage(DeltaTime,NormalViewInfoCache,AdditiveWorldViewInfo,ModifyViewInfo,NormalViewInfo);
+
+
 }
 void UCameraMontagePlayer::UpdateCameraMontageAdditivePlay(float DeltaTime,FActionCameraNormalViewInfo& InAdditiveViewInfo)
 {
@@ -342,10 +368,10 @@ void UCameraMontagePlayer::UpdateCameraMontageModifyPlay(float DeltaTime, FActio
 	if(CameraMontagePlayModifyStack)
 	{
 		CameraMontagePlayModifyStack->UpdateCameraMontageSequence(DeltaTime,InModifyViewInfo);
-		InModifyViewInfo.Blend(NormalViewInfoCache,CameraMontagePlayModifyStack->GetCurrentWeight());
+		InModifyViewInfo.Blend(NormalViewInfoCache,1-CameraMontagePlayModifyStack->GetCurrentWeight());
 	}
 }
-void UCameraMontagePlayer::ProcessFindChangedMontage(float DeltaTime, const FActionCameraNormalViewInfo& InitialViewInfo,FActionCameraNormalViewInfo InAdditiveViewInfo, FActionCameraNormalViewInfo InModifyViewInfo
+void UCameraMontagePlayer::ProcessFindChangedMontage(float DeltaTime, const FActionCameraNormalViewInfo& InitialViewInfo,const FActionCameraNormalViewInfo &InAdditiveViewInfo, FActionCameraNormalViewInfo InModifyViewInfo
 	,FActionCameraNormalViewInfo & ApplyViewInfo)
 {	if(!CameraMontagePlayModifyStack&&CameraMontagePlayAdditiveStack.Num()<=0) return;
 	//没有修改的情况
@@ -359,8 +385,10 @@ void UCameraMontagePlayer::ProcessFindChangedMontage(float DeltaTime, const FAct
 		FinalViewInfo=InModifyViewInfo+InAdditiveViewInfo;
 	}
 	FinalViewInfo=ActionViewInterp::InterpActionView(DeltaTime,bCameraFovLag,CameraFovLagSpeed
-			,bCameraLocationLag,CameraLogSpeed,bCameraRotationLag,CameraRotationLagSpeed,InitialViewInfo
-			,FinalViewInfo);
+		,bCameraLocationLag,CameraLogSpeed,bCameraRotationLag,CameraRotationLagSpeed,InitialViewInfo
+		,FinalViewInfo);
 	ApplyViewInfo=FinalViewInfo;
+	
+	
 }
 

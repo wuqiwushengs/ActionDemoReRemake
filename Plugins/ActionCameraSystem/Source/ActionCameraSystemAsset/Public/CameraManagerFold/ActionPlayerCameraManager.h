@@ -63,6 +63,7 @@ private:
 	void UpdateCameraModes();
 	void UpdateActionCameraValue(FMinimalViewInfo  &OutPOV,float DeltaTime);
 	void UpdateCameraLag(FActionCameraNormalViewInfo &ActionCameraNormalViewInfo,float DeltaTime);
+	void UpdateCameraMontageLag(FActionCameraNormalViewInfo &ActionCameraNormalViewInfo,float DeltaTime);
 public:
 	UPROPERTY(EditDefaultsOnly)
 	bool bDoRotationLag;

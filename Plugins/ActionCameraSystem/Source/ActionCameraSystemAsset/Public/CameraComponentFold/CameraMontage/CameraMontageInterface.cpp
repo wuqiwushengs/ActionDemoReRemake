@@ -38,41 +38,46 @@ namespace CameraMontageBlend
 		case EAdditiveType::CameraLocation:
 			PivotInfo.OriginLocation=CameraLocation;
 			PivotInfo.OriginRotator=CameraRotation;
-			PivotInfo.ForwardVector=FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Type::X);
-			PivotInfo.RightVector=FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Type::Y);
-			PivotInfo.UpVector=FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Type::Z);
+			PivotInfo.ForwardVector=FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Type::X).GetSafeNormal();
+			PivotInfo.RightVector=FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Type::Y).GetSafeNormal();
+			PivotInfo.UpVector=FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Type::Z).GetSafeNormal();
 			break;
 		case EAdditiveType::WorldLocation:
 			PivotInfo.OriginLocation=FVector(0,0,0);
 			PivotInfo.OriginRotator=FRotator(0,0,0);
-			PivotInfo.ForwardVector=FVector(1,0,0);
-			PivotInfo.RightVector=FVector(0,1,0);
-			PivotInfo.UpVector=FVector(0,0,1);
+			PivotInfo.ForwardVector=FVector(1,0,0).GetSafeNormal();
+			PivotInfo.RightVector=FVector(0,1,0).GetSafeNormal();
+			PivotInfo.UpVector=FVector(0,0,1).GetSafeNormal();
 			break;
 		case EAdditiveType::TargetActorLocation:
 			PivotInfo.OriginLocation=FollowTarget->GetActorLocation();
 			PivotInfo.OriginRotator=FollowTarget->GetActorRotation();
-			PivotInfo.ForwardVector=FRotationMatrix(PivotInfo.OriginRotator).GetUnitAxis(EAxis::Type::X);
-	
-			PivotInfo.RightVector=FRotationMatrix(PivotInfo.OriginRotator).GetUnitAxis(EAxis::Type::Y);
-			PivotInfo.UpVector=FRotationMatrix(PivotInfo.OriginRotator).GetUnitAxis(EAxis::Type::Z);
+			PivotInfo.ForwardVector=FRotationMatrix(PivotInfo.OriginRotator).GetUnitAxis(EAxis::Type::X).GetSafeNormal();
+			PivotInfo.RightVector=FRotationMatrix(PivotInfo.OriginRotator).GetUnitAxis(EAxis::Type::Y).GetSafeNormal();
+			PivotInfo.UpVector=FRotationMatrix(PivotInfo.OriginRotator).GetUnitAxis(EAxis::Type::Z).GetSafeNormal();
 			break;
 		case EAdditiveType::CameraToTargetLocation:
 			PivotInfo.OriginLocation=CameraLocation;
 			PivotInfo.OriginRotator= (FollowTarget->GetActorLocation()-CameraLocation).Rotation();
-			PivotInfo.ForwardVector=FRotationMatrix(PivotInfo.OriginRotator).GetUnitAxis(EAxis::Type::X);
-			PivotInfo.RightVector=FRotationMatrix(PivotInfo.OriginRotator).GetUnitAxis(EAxis::Type::Y);
-			PivotInfo.UpVector=FRotationMatrix(PivotInfo.OriginRotator).GetUnitAxis(EAxis::Type::Z);
+			PivotInfo.ForwardVector=FRotationMatrix(PivotInfo.OriginRotator).GetUnitAxis(EAxis::Type::X).GetSafeNormal();
+			PivotInfo.RightVector=FRotationMatrix(PivotInfo.OriginRotator).GetUnitAxis(EAxis::Type::Y).GetSafeNormal();
+			PivotInfo.UpVector=FRotationMatrix(PivotInfo.OriginRotator).GetUnitAxis(EAxis::Type::Z).GetSafeNormal();
 			break;
 		}
 		return PivotInfo;
 	}
 
 	FMinimalViewInfo GetAnimationSequenceTransformInfo( UCameraMontageSequence* Sequence)
-	{
+	{	//ViewInfo中Fov初始值为0
 		FMinimalViewInfo ViewInfo;
+		ViewInfo.FOV=90;
 		float PlayTime= FMath::Fmod(Sequence->GetPlayedTime(),Sequence->CameraAnimMontageInfo.MontageInfo.DurationTime);
-		Sequence->CameraAnimMontageInfo.MontageInfo.CameraSequence.GetCameraDataAtTime(PlayTime,ViewInfo);
+		Sequence->CameraAnimMontageInfo.MontageInfo.CameraSequence.GetCameraDataAtTime(PlayTime,ViewInfo,Sequence);
+		UCurveFloat * Fov= Sequence->CameraAnimMontageInfo.MontageInfo.CameraSequence.FovCurve;
+		if(Fov)
+		{
+			ViewInfo.FOV=Fov->GetFloatValue(PlayTime);
+		}
 		return ViewInfo;
 	}
 }
@@ -85,7 +90,6 @@ void FCameraMontageFixTransformFactory::ProcessCameraMontagePlayAdditive(FAction
 	 FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(Sequence->CameraAnimMontageInfo.AdditiveType,Sequence->GetTargetActor());
 	AdditiveViewInfo.CameraLocation=PivotInfo.GetCorrectLocation(AdditiveViewInfo.CameraLocation,ModifyInfo.CameraLocation*BlendWeight);
 	AdditiveViewInfo.CameraRotation+=ModifyInfo.CameraRotation*BlendWeight;
-
 	AdditiveViewInfo.FOV+=ModifyInfo.FOV*BlendWeight;
 }
 
@@ -96,8 +100,10 @@ void FCameraMontageFixTransformFactory::ProcessCameraMontagePlayModify(FActionCa
 	//获取的旋转这里永远是Target的位置以及旋转等信息
 	FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(EAdditiveType::TargetActorLocation,Sequence->GetTargetActor());
 	FVector SocketLocation=Sequence->GetSocketLocation();
+	DrawDebugSphere(Sequence->GetWorld(),SocketLocation,10.0f,3,FColor::Blue,false,3,2,3);
 	ModifyViewInfo.CameraLocation=PivotInfo.GetCorrectLocation(SocketLocation,ModifyInfo.CameraLocation);
-	ModifyViewInfo.CameraRotation=ModifyInfo.CameraRotation;
+	DrawDebugSphere(Sequence->GetWorld(),ModifyViewInfo.CameraLocation,10.0f,3,FColor::Blue,false,5,2,3);
+	ModifyViewInfo.CameraRotation=ModifyInfo.CameraRotation+Sequence->GetTargetActor()->GetActorRotation();
 	ModifyViewInfo.FOV=ModifyInfo.FOV;
 }
 //CurveMontage
@@ -130,7 +136,7 @@ void FCameraMontageCurveMontageFactory::ProcessCameraMontagePlayModify(FActionCa
 	FVector SocketLocation=Sequence->GetSocketLocation();
 	FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(EAdditiveType::TargetActorLocation,Sequence->GetTargetActor());
 	ModifyViewInfo.CameraLocation=PivotInfo.GetCorrectLocation(SocketLocation,Location);
-	ModifyViewInfo.CameraRotation=Rotator;
+	ModifyViewInfo.CameraRotation=Rotator+Sequence->GetTargetActor()->GetActorRotation();
 	ModifyViewInfo.FOV=Fov;
 }
 //AnimSequenceMontage
@@ -151,7 +157,7 @@ void FCameraMontageAnimSequenceMontageFactory::ProcessCameraMontagePlayModify(
 	FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(EAdditiveType::TargetActorLocation,Sequence->GetTargetActor());
 	FVector SocketLocation=Sequence->GetSocketLocation();
 	ModifyViewInfo.CameraLocation=PivotInfo.GetCorrectLocation(SocketLocation,MinimalViewInfo.Location);
-	ModifyViewInfo.CameraRotation=MinimalViewInfo.Rotation;
+	ModifyViewInfo.CameraRotation=MinimalViewInfo.Rotation+Sequence->GetTargetActor()->GetActorRotation();;
 	ModifyViewInfo.FOV=MinimalViewInfo.FOV;
 }
 

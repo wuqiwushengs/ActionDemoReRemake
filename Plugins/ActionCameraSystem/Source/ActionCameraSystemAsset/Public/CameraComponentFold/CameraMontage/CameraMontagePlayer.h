@@ -31,8 +31,8 @@ public:
 	void SetBlendType(ECameraMontageBlendType BlendType);
 	ECameraMontageBlendType GetBlendType() { return CameraMontageBlendType;}
 	FGuid Getid() const { return id;}
-	virtual void OnDeactivate() {};
-	virtual void OnActive(){};
+	virtual void OnDeactivate() ;
+	virtual void OnActive();
 	UFUNCTION()
 	virtual void UpdateCameraMontageSequence(float DeltaTime,FActionCameraNormalViewInfo & MontageViewInfo);
 	UFUNCTION()
@@ -113,7 +113,7 @@ private:
 	void UpdateCameraMontageStack(float DeltaTime);
 	void UpdateCameraMontageAdditivePlay(float DeltaTime,FActionCameraNormalViewInfo & InAdditiveViewInfo);
 	void UpdateCameraMontageModifyPlay(float DeltaTime,FActionCameraNormalViewInfo & InModifyViewInfo,FActionCameraNormalViewInfo & NormalViewInfoCache);
-	void ProcessFindChangedMontage(float DeltaTime,const FActionCameraNormalViewInfo& InitialViewInfo,FActionCameraNormalViewInfo InAdditiveViewInfo,FActionCameraNormalViewInfo InModifyViewInfo,FActionCameraNormalViewInfo & ApplyViewInfo);
+	void ProcessFindChangedMontage(float DeltaTime,const FActionCameraNormalViewInfo& InitialViewInfo,const FActionCameraNormalViewInfo& InAdditiveViewInfo,FActionCameraNormalViewInfo InModifyViewInfo,FActionCameraNormalViewInfo & ApplyViewInfo);
 	UPROPERTY()
 	TSet<UCameraMontageSequence *> CameraMontageSequenceModifyInstances;
 	UPROPERTY()
