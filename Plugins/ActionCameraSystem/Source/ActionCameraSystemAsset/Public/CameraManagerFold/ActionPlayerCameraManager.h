@@ -7,6 +7,8 @@
 #include "CameraModeFold/ActionCameraStack.h"
 #include "ActionPlayerCameraManager.generated.h"
 
+class UPostBlendbaseMode;
+class UPostBlendStack;
 class UCameraMontagePlayer;
 class UActionUiCameraComponent;
 struct FActionCameraNormalViewInfo;
@@ -63,7 +65,6 @@ private:
 	void UpdateCameraModes();
 	void UpdateActionCameraValue(FMinimalViewInfo  &OutPOV,float DeltaTime);
 	void UpdateCameraLag(FActionCameraNormalViewInfo &ActionCameraNormalViewInfo,float DeltaTime);
-	void UpdateCameraMontageLag(FActionCameraNormalViewInfo &ActionCameraNormalViewInfo,float DeltaTime);
 public:
 	UPROPERTY(EditDefaultsOnly)
 	bool bDoRotationLag;
@@ -93,6 +94,7 @@ public:
 	void DeactiveUICameraComponent(FViewTargetTransitionParams TransitionParams);
 	UPROPERTY(BlueprintReadOnly)
 	UActionUiCameraComponent * UICameraComponent;
+	FTimerHandle ViewHandle;
 #pragma  endregion 
 	UPROPERTY(BlueprintReadOnly)
 	APawn * ControlledPlayer;
@@ -112,6 +114,20 @@ private:
 	FTimerHandle ColorScaleHandle;
 #pragma endregion
 	bool bFirst=true;
-
 	FVector LastPivotLocation;
+
+#pragma  region PostProcessingBlend
+public:
+	/*这里更改后处理材质不会有任何的作用*/
+	UFUNCTION(BlueprintCallable)
+	void SetNewPostProcess(FPostProcessSettings PostSettings);
+	UFUNCTION(BlueprintCallable)
+	void AddPostProcess(TSubclassOf<UPostBlendbaseMode> BlendMode);
+private:
+	UPROPERTY()
+	UPostBlendStack * PostBlendStack;
+	UPROPERTY()
+	FPostProcessSettings FinalCameraProcessSettingCache;
+
+#pragma  endregion 
 };

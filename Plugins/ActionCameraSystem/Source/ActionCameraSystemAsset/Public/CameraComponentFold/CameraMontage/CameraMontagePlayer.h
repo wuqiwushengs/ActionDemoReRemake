@@ -40,14 +40,14 @@ public:
 	{
 		if(!TargetActor)
 		{
-			SetTargetActor_Implementation();
+			TargetActor=SetTargetActor_Implementation();
 		}
 		return TargetActor;
 	}
 	//如果默认的话这个目标Actor就是角色自身
 	UFUNCTION(BlueprintNativeEvent)
-	void SetTargetActor();
-	void SetTargetActor_Implementation();
+	AActor * SetTargetActor();
+	AActor* SetTargetActor_Implementation();
 	UFUNCTION(BlueprintCallable)
 	APawn * GetControlledPlayer();
 	UFUNCTION(BlueprintCallable,BlueprintPure)

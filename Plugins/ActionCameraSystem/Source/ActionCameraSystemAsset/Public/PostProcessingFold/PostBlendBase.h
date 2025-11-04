@@ -9,7 +9,7 @@
 /**
  * 通过重载他来更改后处理内容
  */
-UCLASS(Abstract)
+UCLASS(Abstract,Blueprintable)
 class ACTIONCAMERASYSTEMASSET_API UPostBlendBase : public UObject,public IBlendableInterface
 {
 	GENERATED_BODY()

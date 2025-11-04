@@ -11,6 +11,7 @@
 #include "CameraModeFold/ActionCameraMode.h"
 #include "Engine/Canvas.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "PostProcessingFold/PostBlendStack.h"
 
 AActionPlayerCameraManager::AActionPlayerCameraManager()
 {
@@ -30,6 +31,10 @@ void AActionPlayerCameraManager::InitializeFor(class APlayerController* PC)
 	{
 		check(MontagePlayerClass)
 		CameraMontagePlayer=NewObject<UCameraMontagePlayer>(this,MontagePlayerClass);
+	}
+	if(!PostBlendStack)
+	{
+		PostBlendStack=NewObject<UPostBlendStack>(this);
 	}
 }
 
@@ -138,12 +143,13 @@ void AActionPlayerCameraManager::UpdateViewTarget(FTViewTarget& OutVT, float Del
 	}
 	else
 	{
-		UpdateCameraModes();
-		// Don't update outgoing viewtarget during an interpolation 
-		if ((PendingViewTarget.Target != NULL) && BlendParams.bLockOutgoing && OutVT.Equal(ViewTarget))
+			if ((PendingViewTarget.Target != NULL) && BlendParams.bLockOutgoing && OutVT.Equal(ViewTarget))
 		{
 			return;
 		}
+		UpdateCameraModes();
+		// Don't update outgoing viewtarget during an interpolation 
+	
 		// Reset the view target POV fully
 		static const FMinimalViewInfo DefaultViewInfo;
 		OutVT.POV = DefaultViewInfo;
@@ -174,9 +180,9 @@ void AActionPlayerCameraManager::UpdateViewTarget(FTViewTarget& OutVT, float Del
 
 		UpdateCameraLensEffects(OutVT);
 	}
-	ECameraForm  CameraForm;
+	/*ECameraForm  CameraForm;
 	GetCurrentActiveCameraComponent(CameraForm)->SetWorldLocationAndRotation(OutVT.POV.Location,OutVT.POV.Rotation);
-	SetAllCameraLocationAndRotation();
+	SetAllCameraLocationAndRotation();*/
 }
 
 void AActionPlayerCameraManager::UpdateCameraModes()
@@ -207,12 +213,9 @@ void AActionPlayerCameraManager::UpdateActionCameraValue(FMinimalViewInfo & OutP
 	UpdateCameraLag(StackViewInfo,DeltaTime);
 	//摄像机蒙太奇的更新
 	CameraMontagePlayer->UpdateCameraMontagePlay(DeltaTime,StackViewInfo,CameraNormalViewInfoCache);
-	//摄像机延迟变换的更新
-	
 	//摄像机避障处理的更新
-
+	
 	//给摄像机的缓存赋值。
-	/*UpdateCameraMontageLag(StackViewInfo,DeltaTime);*/
 	bFirst=false;	
 	CameraMontageViewInfoCache=StackViewInfo;
 	//给摄像机赋值
@@ -220,6 +223,9 @@ void AActionPlayerCameraManager::UpdateActionCameraValue(FMinimalViewInfo & OutP
 	OutPOV.Rotation=StackViewInfo.CameraRotation;
 	OutPOV.FOV=StackViewInfo.FOV;
 	//摄像机后处理的更新
+	PostBlendStack->UpdateBlendInfo(DeltaTime);
+	OutPOV.PostProcessSettings=PostBlendStack->GetFinalPostProcessSettings();
+	FinalCameraProcessSettingCache=OutPOV.PostProcessSettings;
 }
 
 void AActionPlayerCameraManager::UpdateCameraLag(FActionCameraNormalViewInfo& ActionCameraNormalViewInfo,
@@ -282,68 +288,6 @@ void AActionPlayerCameraManager::UpdateCameraLag(FActionCameraNormalViewInfo& Ac
 	ActionCameraNormalViewInfo.CameraLocation=DesiredLoc;
 	CameraNormalViewInfoCache.CameraLocation=DesiredLoc;
 }
-
-void AActionPlayerCameraManager::UpdateCameraMontageLag(FActionCameraNormalViewInfo& ActionCameraNormalViewInfo,
-	float DeltaTime)
-{
-	if(bFirst) return;
-	FRotator DesiredRot=ActionCameraNormalViewInfo.CameraRotation;
-	if(bDoRotationLag)
-	{
-		//这里是一个分布迭代的算法
-		if(bUseCameraTimeStep && DeltaTime>CameraLagMaxTimeStep &&	CameraRotationLagSpeed>0.f)
-		{
-			const FRotator RotStep=(ActionCameraNormalViewInfo.CameraRotation-CameraMontageViewInfoCache.CameraRotation).GetNormalized()*(1.f/DeltaTime);
-			FRotator LerpTarget=CameraMontageViewInfoCache.CameraRotation;
-			float RemainingTime=DeltaTime;
-			while (RemainingTime>UE_KINDA_SMALL_NUMBER)
-			{
-				const float LerpAmount = FMath::Min(CameraLagMaxTimeStep, RemainingTime);
-				LerpTarget += RotStep * LerpAmount;
-				RemainingTime -= LerpAmount;
-				DesiredRot = FRotator(FMath::QInterpTo(FQuat(CameraMontageViewInfoCache.CameraRotation), FQuat(LerpTarget), LerpAmount, CameraRotationLagSpeed));
-			}
-			ActionCameraNormalViewInfo.CameraRotation=DesiredRot;
-			CameraMontageViewInfoCache.CameraRotation= DesiredRot;
-		}
-		else
-		{
-			DesiredRot=FRotator(FMath::QInterpTo(FQuat(CameraMontageViewInfoCache.CameraRotation),FQuat(DesiredRot),DeltaTime,CameraRotationLagSpeed));
-		}
-	}
-	
-	CameraMontageViewInfoCache.CameraRotation=DesiredRot;
-	ActionCameraNormalViewInfo.CameraRotation=DesiredRot;
-	FVector Origin=CameraMontageViewInfoCache.CameraLocation;
-	FVector DesiredLoc=ActionCameraNormalViewInfo.CameraLocation;
-	FVector CurrentLoc=CameraMontageViewInfoCache.CameraLocation;
-	if(bDoLocationLag)
-	{
-		if(bUseCameraTimeStep && DeltaTime>CameraLagMaxTimeStep && CameraLagSpeed>0.f)
-		{
-			const FVector MovementStep=(DesiredLoc-CurrentLoc)*(1.f/DeltaTime);
-			FVector Target=CurrentLoc;
-			float RemainingTime = DeltaTime;
-			while (RemainingTime > UE_KINDA_SMALL_NUMBER)
-			{
-				const float LerpAmount = FMath::Min(CameraLagMaxTimeStep, RemainingTime);
-				Target +=MovementStep  * LerpAmount;
-				RemainingTime -= LerpAmount;
-
-				DesiredLoc = FMath::VInterpTo(CurrentLoc, Target, LerpAmount, CameraLagSpeed);
-				CurrentLoc = DesiredLoc;
-				ActionCameraNormalViewInfo.CameraLocation=DesiredLoc;
-				CameraMontageViewInfoCache.CameraLocation=DesiredLoc;
-			}
-		}
-		else
-		{
-			DesiredLoc = FMath::VInterpTo(CurrentLoc, DesiredLoc, DeltaTime, CameraLagSpeed);
-		}
-	}
-	ActionCameraNormalViewInfo.CameraLocation=DesiredLoc;
-	CameraMontageViewInfoCache.CameraLocation=DesiredLoc;
-}
 #pragma region Debug
 void AActionPlayerCameraManager::DisplayDebug(class UCanvas* Canvas, const class FDebugDisplayInfo& DebugDisplay,float& YL, float& YPos)
 {
@@ -352,11 +296,11 @@ void AActionPlayerCameraManager::DisplayDebug(class UCanvas* Canvas, const class
 	ICameraComponentInterface * CI_TMP=Cast<ICameraComponentInterface>(CurrentActiveCameraCache);
 	if(CI_TMP){CI_TMP->DrawDebug(Canvas);}
 	FDisplayDebugManager& DisplayDebugManager = Canvas->DisplayDebugManager;
-	ECameraForm CameraForm;
-	DisplayDebugManager.DrawString(FString::Printf(TEXT("CurrentCameraName: %s"),*GetCurrentActiveCameraComponent(CameraForm)->GetName()));
 	DisplayDebugManager.DrawString(FString::Printf(TEXT("CurrentFov: %f"),GetCameraCacheView().FOV));
 	CameraStack->DrawDebug(Canvas);
 	CameraMontagePlayer->DisplayDebug(Canvas);
+	PostBlendStack->DisplayDebug(Canvas);
+	
 }
 #pragma endregion
 
@@ -377,9 +321,14 @@ void AActionPlayerCameraManager::ActiveUICameraComponent(AActor* InUiCameraActor
 } 
 void AActionPlayerCameraManager::DeactiveUICameraComponent(FViewTargetTransitionParams TransitionParams)
 {
+	if(ViewHandle.IsValid()) return;
 	SetViewTarget(ControlledPlayer,TransitionParams);
-	UICameraComponent->OnLeaveViewTarget();
+	GetWorld()->GetTimerManager().SetTimer(ViewHandle,[this]()
+	{
+		if(!UICameraComponent) return;
+		UICameraComponent->OnLeaveViewTarget();
 	UICameraComponent=nullptr;
+	},TransitionParams.BlendTime,false);
 }
 #pragma endregion
 #pragma region  SceneColorChange
@@ -413,5 +362,18 @@ void AActionPlayerCameraManager::SetSceneColorWithCustom(FVector WantedColorScal
 			}
 		}
 	},DurationTime,false);
+}
+
+void AActionPlayerCameraManager::SetNewPostProcess(FPostProcessSettings PostSettings)
+{
+	if(PostBlendStack)
+	{
+		PostBlendStack->StartPostProcessingChange(PostSettings);
+	}
+}
+
+void AActionPlayerCameraManager::AddPostProcess(TSubclassOf<UPostBlendbaseMode> BlendMode)
+{
+	PostBlendStack->AddBlendMode(BlendMode);
 }
 #pragma endregion

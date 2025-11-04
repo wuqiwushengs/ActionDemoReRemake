@@ -403,36 +403,17 @@ public:
 };
 /*为以后的扩展作准备*/
 USTRUCT(BlueprintType)
-struct FCameraPostProcessBlendableValue
+struct  FPostBlendableInfo
 {
 	GENERATED_BODY()
-	/*必须重载PostBlendBase类并且继承ChangeBlendableSettings */
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	TSubclassOf<UPostBlendBase>  PostProcessBlendableClass;
-	
-};
-USTRUCT(BlueprintType)
-struct FCameraPostProcessBlendableValueChange:public  FTableRowBase
-{
-	GENERATED_BODY()
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
-	FCameraPostProcessBlendableValue BlendableValue;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
-	FBlendData BlendData;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
-	bool bLoop;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	FGameplayTag PostProcessBlendableTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=FPostBlendableInfo, meta=( AllowedClasses="/Script/Engine.BlendableInterface", Keywords="PostProcess" ))
+	TObjectPtr<UObject> PostBlendobject;
+	UPROPERTY(EditDefaultsOnly)
+	float FromAlpha;
+	UPROPERTY(EditDefaultsOnly)
+	float ToAlpha;
 };
 
-UCLASS()
-class UPostProcessBlendableValueChange : public UPrimaryDataAsset
-{
-	GENERATED_BODY()
-public:
-	UPROPERTY(EditAnywhere)
-	TArray<FCameraPostProcessBlendableValueChange> BlendableValue;
-};
 #pragma  endregion
 #pragma region CineCamera
 USTRUCT(BlueprintType)

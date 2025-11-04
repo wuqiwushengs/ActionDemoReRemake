@@ -94,9 +94,9 @@ void UCameraMontageSequence::UpdateCameraMontageSequence(float DeltaTime,FAction
 	UpdateMontageInfo(DeltaTime, MontageViewInfo);
 	UpdateBlendInfo(DeltaTime);
 }
-void UCameraMontageSequence::SetTargetActor_Implementation()
+AActor* UCameraMontageSequence::SetTargetActor_Implementation()
 {
-	TargetActor=GetControlledPlayer();
+	return  GetControlledPlayer();
 }
 
 APawn* UCameraMontageSequence::GetControlledPlayer()
