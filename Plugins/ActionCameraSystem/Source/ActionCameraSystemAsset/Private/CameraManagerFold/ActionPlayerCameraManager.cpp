@@ -180,9 +180,6 @@ void AActionPlayerCameraManager::UpdateViewTarget(FTViewTarget& OutVT, float Del
 
 		UpdateCameraLensEffects(OutVT);
 	}
-	/*ECameraForm  CameraForm;
-	GetCurrentActiveCameraComponent(CameraForm)->SetWorldLocationAndRotation(OutVT.POV.Location,OutVT.POV.Rotation);
-	SetAllCameraLocationAndRotation();*/
 }
 
 void AActionPlayerCameraManager::UpdateCameraModes()

@@ -415,57 +415,5 @@ struct  FPostBlendableInfo
 };
 
 #pragma  endregion
-#pragma region CineCamera
-USTRUCT(BlueprintType)
-struct FCineCameraInfo
-{
-	GENERATED_BODY()
-	UPROPERTY(Interp, EditAnywhere, BlueprintReadWrite, Category = "Current Camera Settings")
-	FCameraFilmbackSettings Filmback;
-	/** Controls the camera's lens. */
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Current Camera Settings")
-	FCameraLensSettings LensSettings;
-	/** Controls the camera's focus. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Current Camera Settings")
-	FCameraFocusSettings FocusSettings;
-	/** Controls the crop settings. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Current Camera Settings")
-	FPlateCropSettings CropSettings;
-	/** Current focal length of the camera (i.e. controls FoV, zoom) */
-	UPROPERTY(Interp, EditAnywhere, BlueprintReadWrite, Category = "Current Camera Settings")
-	float CurrentFocalLength;
-	/** Current aperture, in terms of f-stop (e.g. 2.8 for f/2.8) */
-	UPROPERTY(Interp, EditAnywhere, BlueprintReadWrite, Category = "Current Camera Settings")
-	float CurrentAperture;
-	/** Read-only. Control this value via FocusSettings. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Current Camera Settings")
-	float CurrentFocusDistance;
-};
-
-USTRUCT(BlueprintType)
-struct FCineCameraValueChange
-{
-	GENERATED_BODY()
-	UPROPERTY(EditAnywhere,BlueprintReadOnly)
-	FCineCameraInfo CineCameraInfo;
-	UPROPERTY(EditAnywhere,BlueprintReadOnly)
-	FBlendData BlendData;
-	UPROPERTY(EditAnywhere,BlueprintReadOnly)
-	float Duration=0.0f;
-	UPROPERTY(EditAnywhere,BlueprintReadOnly)
-	bool bLoop;
-	UPROPERTY(EditAnywhere,BlueprintReadOnly)
-	FGameplayTag CineCameraTag;
-};
-
-UCLASS()
-class ACTIONCAMERASYSTEMASSET_API UCineCameraValueDataAsset : public UPrimaryDataAsset
-{
-	GENERATED_BODY()
-public:
-	UPROPERTY(EditAnywhere,BlueprintReadOnly,meta=(TitleProperty="{CineCameraTag}"))
-	TArray<FCineCameraValueChange> CineCameraValues;
-};
-#pragma endregion
 //TODO::CameraShake 和 Camera lensEffect这两个需要进行调整
 
