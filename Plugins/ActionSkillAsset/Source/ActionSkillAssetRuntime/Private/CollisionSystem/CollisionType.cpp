@@ -97,7 +97,7 @@ TArray<FHitResult> FCollisionContext::SkeletalMeshTraceChannel(AActor* Tracer, F
 		{
 			FVector Start= ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->GetLastUpdateSocketLocation(SocketName,ECollisionType::SkeletalMesh);
 			FVector End= ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->GetCurrentUpdateSocketLocation(SocketName,ECollisionType::SkeletalMesh);
-			if(Start.Equals(End)) return HitResults;
+			if(Start.Equals(End)||Start.Length()<10||End.Length()<10) return HitResults;
 			if(CollisionInfoSum.bMultiTrace)
 			{
 				TArray<FHitResult> Results;
@@ -134,7 +134,7 @@ TArray<FHitResult> FCollisionContext::StaticMeshTraceChannel(AActor* Tracer, FNa
 		{
 			FVector Start= ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->GetLastUpdateSocketLocation(SocketName,ECollisionType::StaticMesh);
 			FVector End= ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->GetCurrentUpdateSocketLocation(SocketName,ECollisionType::StaticMesh);
-			if(Start.Equals(End)) return HitResults;
+			if(Start.Equals(End)||Start.Length()<10||End.Length()<10) return HitResults;
 			if(CollisionInfoSum.bMultiTrace)
 			{
 				TArray<FHitResult> Results;

@@ -14,6 +14,7 @@ class UActionCameraMode;
  * 
  */
 
+class CameraStackLock;
 UCLASS()
 class ACTIONCAMERASYSTEMASSET_API UActionCameraStack : public UObject
 {
@@ -33,7 +34,9 @@ public:
 	void UpdatePivot(float DeltaTime);
 	UActionCameraMode * GetCameraModeInstance(TSubclassOf<UActionCameraMode> CameraModeClass);
 	FVector GetPivotLocation() {return  PivotLocation ;}
+	
 protected:
+	int lockindex;
 	FVector PivotLocation;
 	bool bisActive;
 	UPROPERTY()
@@ -41,3 +44,4 @@ protected:
 	UPROPERTY()
 	TArray<TObjectPtr<UActionCameraMode>> CameraModeStack;
 };
+

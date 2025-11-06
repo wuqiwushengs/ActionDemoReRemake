@@ -3,6 +3,7 @@
 
 #include "CameraModeFold/ActionCameraStack.h"
 
+#include "CameraManagerFold/ActionPlayerCameraManager.h"
 #include "CameraModeFold/ActionCameraMode.h"
 
 UActionCameraStack::UActionCameraStack()
@@ -19,6 +20,7 @@ void UActionCameraStack::ActiveStack()
 		{
 			check(CameraMode);
 			CameraMode->OnActivation();
+			CameraMode->CurrentBlendMode=EBlendType::BlendIn;
 		}
 	}
 }
@@ -33,6 +35,7 @@ void UActionCameraStack::DeactivateStack()
 			check(CameraMode);
 			CameraMode->OnDeactivation();
 		}
+		CameraModeStack.Empty();
 	}
 }
 void UActionCameraStack::DrawDebug(UCanvas* Canvas)
@@ -131,7 +134,6 @@ void UActionCameraStack::PushCameraMode(TSubclassOf<UActionCameraMode> CameraMod
 		if(ExistingStackIndex==-1)
 		{
 			CameraMode->OnActivation();
-			CameraMode->CurrentBlendMode=EBlendType::BlendIn;
 		}
 	}
 }
@@ -174,7 +176,10 @@ void UActionCameraStack::UpdateStack(float DeltaTime)
 		{
 			UActionCameraMode * CameraMode=CameraModeStack[StackIndex];
 			check(CameraMode)
-			CameraMode->OnDeactivation();
+			if(CameraMode)
+			{
+				CameraMode->OnDeactivation();
+			}
 		}
 		CameraModeStack.RemoveAt(RemoveIndex,RemoveCount);
 	}
@@ -212,13 +217,13 @@ void UActionCameraStack::UpdatePivot(float DeltaTime)
 	{
 		CameraMode=CameraModeStack[StackIndex];
 		check(CameraMode)
-		CameraGlobalFunc::BlendPivot(PivotLocation,CameraMode->GetPivotLocation(),CameraMode->GetBlendWeight());
+		CameraGlobalFunc::BlendPivot(PivotLocation,CameraMode->GetPivotAfterOffsetLocation(),CameraMode->GetBlendWeight());
 	}
 }
 
 UActionCameraMode* UActionCameraStack::GetCameraModeInstance(TSubclassOf<UActionCameraMode> CameraModeClass)
 {
-	if(!CameraModeClass)
+	if(!CameraModeClass||lockindex!=0)
 	{
 		return nullptr;
 	}
@@ -231,6 +236,8 @@ UActionCameraMode* UActionCameraStack::GetCameraModeInstance(TSubclassOf<UAction
 	}
 	UActionCameraMode * NewCameraMode=NewObject<UActionCameraMode>(this,CameraModeClass);
 	check(NewCameraMode)
+	NewCameraMode->ViewInfoFactory= Cast<AActionPlayerCameraManager>(GetOuter())->ViewInfoFactory;
+	if(NewCameraMode->DoOnce) return NewCameraMode;
 	CameraModeInstance.Add(NewCameraMode);
 	return NewCameraMode;
 }

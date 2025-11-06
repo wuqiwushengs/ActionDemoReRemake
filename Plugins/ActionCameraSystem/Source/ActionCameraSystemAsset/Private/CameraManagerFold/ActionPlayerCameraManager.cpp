@@ -4,7 +4,6 @@
 #include "CameraManagerFold/ActionPlayerCameraManager.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
-#include "CameraComponentFold/CameraComponentInterface.h"
 #include "CameraComponentFold/UActionUiCameraComponent.h"
 #include "CameraComponentFold/CameraMontage/CameraMontagePlayer.h"
 #include "CameraDataFold/ActionCameraTypes.h"
@@ -19,6 +18,16 @@ AActionPlayerCameraManager::AActionPlayerCameraManager()
 	
 }
 
+void AActionPlayerCameraManager::PushCameraMode(TSubclassOf<UActionCameraMode> CameraMode)
+{
+	check(CameraStack);
+
+	if (CameraStack->IsActive())
+	{
+		CameraStack->PushCameraMode(CameraMode);
+	}
+}
+
 void AActionPlayerCameraManager::InitializeFor(class APlayerController* PC)
 {
 	Super::InitializeFor(PC);
@@ -26,6 +35,7 @@ void AActionPlayerCameraManager::InitializeFor(class APlayerController* PC)
 	{
 		CameraStack=NewObject<UActionCameraStack>(this);
 		check(CameraStack);
+		CameraStack->PushCameraMode(DefaultCameraMode);
 	}
 	if(!CameraMontagePlayer)
 	{
@@ -36,6 +46,10 @@ void AActionPlayerCameraManager::InitializeFor(class APlayerController* PC)
 	{
 		PostBlendStack=NewObject<UPostBlendStack>(this);
 	}
+	if(!ViewInfoFactory)
+	{
+		ViewInfoFactory=Cast<ACameraViewInfoFactory>(GetWorld()->SpawnActor(ACameraViewInfoFactory::StaticClass()));
+	}
 }
 
 void AActionPlayerCameraManager::BeginPlay()
@@ -45,74 +59,7 @@ void AActionPlayerCameraManager::BeginPlay()
 	ControlledPlayer=PCOwner->GetPawn();
 	TArray<UCameraComponent *> CameraComponents;
 	ControlledPlayer->GetComponents<UCameraComponent>(CameraComponents);
-	if(CameraComponents.Num()>0)
-	{
-		for(auto CameraComponent:CameraComponents)
-		{	ECameraForm CameraForm=ICameraComponentInterface::Execute_GetCameraForm(CameraComponent);
-			OwnedCamera.FindOrAdd(CameraForm)=CameraComponent;
-		}
-		SetCurrentActiveCameraComponent(DefaultCameraForm);
-	}
 }
-
-
-UCameraComponent* AActionPlayerCameraManager::GetCurrentActiveCameraComponent(ECameraForm& CameraForm)
-{
-	if(!CurrentActiveCameraCache)return nullptr;
-	CameraForm=CurrentActiveCameraTypeCache;
-	return  CurrentActiveCameraCache;
-}
-
-TArray<UCameraComponent*> AActionPlayerCameraManager::GetUnActivateCameraComponent()
-{
-	TArray<UCameraComponent*> CameraComponents;
-	 for (auto CameraInfo:OwnedCamera)
-	 {
-		  if(!CameraInfo.Value->IsActive())
-		  {
-			  CameraComponents.Add(CameraInfo.Value);
-		  }
-	 }
-	return CameraComponents;
-}
-
-void AActionPlayerCameraManager::SetCurrentActiveCameraComponent(ECameraForm ActiveCameraEnum)
-{
-	if(OwnedCamera.Num()<=0 || !OwnedCamera.Find(ActiveCameraEnum)) return;
-	for (TPair<ECameraForm,UCameraComponent*> Camera: OwnedCamera)
-	{
-		if (!Camera.Value || !Camera.Value->IsValidLowLevelFast()) continue;
-		UE_LOG(LogTemp,Warning,TEXT("%s"),*Camera.Value->GetName())
-		if (Camera.Key == ActiveCameraEnum)
-		{
-			if (!Camera.Value->IsActive())
-			{
-				Camera.Value->SetActive(true);
-			}
-			CurrentActiveCameraCache = Camera.Value;
-			CurrentActiveCameraTypeCache = Camera.Key;
-		}
-		else
-		{
-			if (Camera.Value->IsActive())
-			{
-				Camera.Value->SetActive(false);
-			}
-		}
-	}
-		
-	
-}
-
-void AActionPlayerCameraManager::SetAllCameraLocationAndRotation()
-{
-	for( auto Camera :OwnedCamera)
-	{	//不允许摄像机为空或者摄像机为当前摄像机的情况进行修改避免出现重复设置的问题
-		if(!Camera.Value || Camera.Value==CurrentActiveCameraCache) continue;
-		Camera.Value->MoveComponent(CameraNormalViewInfoCache.CameraLocation,CameraNormalViewInfoCache.CameraRotation,false);
-	}
-}
-
 void AActionPlayerCameraManager::AddCameraOffset(FVector NewOffset,float FovOffset)
 {
 	CameraViewLocationOffset+=NewOffset;
@@ -147,10 +94,6 @@ void AActionPlayerCameraManager::UpdateViewTarget(FTViewTarget& OutVT, float Del
 		{
 			return;
 		}
-		UpdateCameraModes();
-		// Don't update outgoing viewtarget during an interpolation 
-	
-		// Reset the view target POV fully
 		static const FMinimalViewInfo DefaultViewInfo;
 		OutVT.POV = DefaultViewInfo;
 		OutVT.POV.FOV = DefaultFOV;
@@ -182,22 +125,6 @@ void AActionPlayerCameraManager::UpdateViewTarget(FTViewTarget& OutVT, float Del
 	}
 }
 
-void AActionPlayerCameraManager::UpdateCameraModes()
-{
-	check(CameraStack);
-
-	if (CameraStack->IsActive())
-	{
-		if (CameraModeBindSingleDelegate.IsBound())
-		{
-			if (const TSubclassOf<UActionCameraMode> CameraMode = CameraModeBindSingleDelegate.Execute())
-			{
-				//推进去的时候进行了判断避免反复推进去同一个 但是绑定多了我觉得还是有很大的问题。
-				CameraStack->PushCameraMode(CameraMode);
-			}
-		}
-	}
-}
 
 void AActionPlayerCameraManager::UpdateActionCameraValue(FMinimalViewInfo & OutPOV, float DeltaTime)
 {
@@ -209,9 +136,10 @@ void AActionPlayerCameraManager::UpdateActionCameraValue(FMinimalViewInfo & OutP
 	CameraNormalViewInfoCache=StackViewInfo;
 	UpdateCameraLag(StackViewInfo,DeltaTime);
 	//摄像机蒙太奇的更新
-	CameraMontagePlayer->UpdateCameraMontagePlay(DeltaTime,StackViewInfo,CameraNormalViewInfoCache);
+	CameraMontagePlayer->UpdateCameraMontagePlay(DeltaTime,StackViewInfo,CameraNormalViewInfoCache,AdditiveViewInfoCache,ModifyViewInfoCache);
 	//摄像机避障处理的更新
-	
+	//因为MontageInfo是最后的更新缓存所以我们不用原来camera的数据，因为我们不期望改变相机的DesiredLocation而是对其进行更改
+	UpdateCameraAvoidance(StackViewInfo,CameraMontageViewInfoCache,DeltaTime);
 	//给摄像机的缓存赋值。
 	bFirst=false;	
 	CameraMontageViewInfoCache=StackViewInfo;
@@ -285,13 +213,34 @@ void AActionPlayerCameraManager::UpdateCameraLag(FActionCameraNormalViewInfo& Ac
 	ActionCameraNormalViewInfo.CameraLocation=DesiredLoc;
 	CameraNormalViewInfoCache.CameraLocation=DesiredLoc;
 }
+
+void AActionPlayerCameraManager::UpdateCameraAvoidance(FActionCameraNormalViewInfo& ActionCameraNormalViewInfo,
+	FActionCameraNormalViewInfo Cache, float DeltaTime)
+{
+	TArray<FHitResult> HitResults;
+	UKismetSystemLibrary::LineTraceMulti(
+		this,
+		CameraStack->GetPivotLocation() + AdditiveViewInfoCache.CameraLocation,
+		ActionCameraNormalViewInfo.CameraLocation,
+		AvoidanceTraceType,
+		true,
+		{ ControlledPlayer }, // 直接初始化忽略列表
+		AvoidanceDebugType,
+		HitResults,
+		true
+	);
+	if (const FHitResult* ValidHit = HitResults.FindByPredicate([this](const FHitResult& Hit) {
+		return !IgnoreActor.Contains(Hit.GetActor()->GetClass());
+	}))
+	{
+		ActionCameraNormalViewInfo.CameraLocation = ValidHit->ImpactPoint;
+	}
+}
 #pragma region Debug
 void AActionPlayerCameraManager::DisplayDebug(class UCanvas* Canvas, const class FDebugDisplayInfo& DebugDisplay,float& YL, float& YPos)
 {
 	Super::DisplayDebug(Canvas, DebugDisplay, YL, YPos);
 	/*这种方法不能用在具有反射功能的函数当中，反射宏会创建一个另外的函数，直接使用会为空*/
-	ICameraComponentInterface * CI_TMP=Cast<ICameraComponentInterface>(CurrentActiveCameraCache);
-	if(CI_TMP){CI_TMP->DrawDebug(Canvas);}
 	FDisplayDebugManager& DisplayDebugManager = Canvas->DisplayDebugManager;
 	DisplayDebugManager.DrawString(FString::Printf(TEXT("CurrentFov: %f"),GetCameraCacheView().FOV));
 	CameraStack->DrawDebug(Canvas);

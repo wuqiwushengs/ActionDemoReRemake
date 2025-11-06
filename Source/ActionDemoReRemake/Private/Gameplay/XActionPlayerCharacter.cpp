@@ -17,10 +17,6 @@ void AXActionPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	AActionPlayerCameraManager* CameraManager=	Cast<AActionPlayerCameraManager>(PlayController->PlayerCameraManager);
-	if(CameraManager)
-	{
-		CameraManager->CameraModeBindSingleDelegate.BindUObject(this, &AXActionPlayerCharacter::GetSelectedCameraMode);
-	}
 }
 TSubclassOf<UActionCameraMode> AXActionPlayerCharacter::GetSelectedCameraMode()
 {

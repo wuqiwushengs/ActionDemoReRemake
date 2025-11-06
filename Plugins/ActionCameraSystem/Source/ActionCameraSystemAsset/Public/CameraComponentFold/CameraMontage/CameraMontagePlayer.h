@@ -3,13 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CameraViewInfoFactory.h"
 #include "CameraComponentFold/CameraMontage/CameraMontageInterface.h"
 #include "CameraDataFold/ActionCameraTypes.h"
 #include "UObject/Object.h"
 #include "CameraMontagePlayer.generated.h"
 
 
-
+class ACameraViewInfoFactory;
 enum class ECameraMontageBlendType : uint8;
 struct FCameraAnimMontagePlay;
 /**
@@ -26,6 +27,8 @@ class UCameraMontageSequence : public UObject
 	GENERATED_BODY()
 public:
 	UCameraMontageSequence();
+	UFUNCTION(BlueprintCallable)
+	AActionPlayerCameraManager * GetPlayerCameraManager();
 	UPROPERTY(EditDefaultsOnly)
 	FCameraAnimMontagePlay CameraAnimMontageInfo;
 	void SetBlendType(ECameraMontageBlendType BlendType);
@@ -40,7 +43,7 @@ public:
 	{
 		if(!TargetActor)
 		{
-			TargetActor=SetTargetActor_Implementation();
+			TargetActor=SetTargetActor();
 		}
 		return TargetActor;
 	}
@@ -60,7 +63,11 @@ public:
 	UFUNCTION(BlueprintCallable,BlueprintPure)
 	FGameplayTag GetMontageGameplayTag() { return MontageTag;}
 	virtual void DisplayDebug(UCanvas * Canvas);
-	float GetCurrentWeight() { return CurrentBlendWeight;}
+	float GetCurrentWeight() { return CurrentBlendWeight;};
+	UPROPERTY(BlueprintReadOnly)
+	ACameraViewInfoFactory* ViewInfoFactory;
+	UPROPERTY(EditDefaultsOnly)
+	bool DoOnce=false;
 private:
 	float CurrentBlendAlpha=0.0f;
 	float CurrentBlendWeight=0.0f;
@@ -73,12 +80,14 @@ private:
 	AActor * TargetActor=nullptr;
 	UPROPERTY(EditDefaultsOnly)
 	FGameplayTag MontageTag;
+	
+
 };
+class  CameraSequenceStackLock;
 UCLASS(Blueprintable)
 class ACTIONCAMERASYSTEMASSET_API UCameraMontagePlayer : public UObject
 {
 	GENERATED_BODY()
-	
 public:
 	UCameraMontagePlayer();
 	UFUNCTION(BlueprintCallable)
@@ -92,7 +101,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	UCameraMontageSequence * GetSequenceInstance(TSubclassOf<UCameraMontageSequence> SequenceClass);
 	FCameraMontageValueCalculateFactory * GetCameraMontageValueCalculateFactory();
-	void UpdateCameraMontagePlay(float DeltaTime,FActionCameraNormalViewInfo & NormalViewInfo,FActionCameraNormalViewInfo & NormalViewInfoCache);
+	void UpdateCameraMontagePlay(float DeltaTime,FActionCameraNormalViewInfo & NormalViewInfo,FActionCameraNormalViewInfo & NormalViewInfoCache,FActionCameraNormalViewInfo & AdditiveViewInfoCache,FActionCameraNormalViewInfo & ModifyViewInfoCache);
+	
 	UPROPERTY(EditDefaultsOnly)
 	bool bCameraLocationLag=true;
 	UPROPERTY(EditDefaultsOnly,meta=(EditCondition="bCameraLocationLag"))
@@ -125,4 +135,5 @@ private:
 	TArray<UCameraMontageSequence*> CameraMontagePlayAdditiveStack;
 	//相机蒙太奇处理的工厂
 	TSharedPtr<FCameraMontageValueCalculateFactory,ESPMode::NotThreadSafe> CameraMontageValueCalculateFactory;
+	int lockindex;
 };

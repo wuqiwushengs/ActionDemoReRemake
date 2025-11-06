@@ -44,6 +44,12 @@ namespace ActionViewInterp
 UCameraMontageSequence::UCameraMontageSequence()
 {
 	id=FGuid::NewGuid();
+	ViewInfoFactory=CreateDefaultSubobject<ACameraViewInfoFactory>("ViewFactory");
+}
+
+AActionPlayerCameraManager* UCameraMontageSequence::GetPlayerCameraManager()
+{
+	return CastChecked<AActionPlayerCameraManager>(GetTypedOuter<AActionPlayerCameraManager>());
 }
 void UCameraMontageSequence::SetBlendType(ECameraMontageBlendType BlendType)
 {
@@ -77,7 +83,7 @@ void UCameraMontageSequence::OnDeactivate()
 	{
 		CameraAnimMontageInfo.MontageInfo.CameraSequence.GetCameraAnimationSequencePlayerInstance(this)->Stop();
 	}
-	
+	TargetActor=nullptr;
 }
 
 void UCameraMontageSequence::OnActive()
@@ -227,6 +233,10 @@ void UCameraMontagePlayer::DeactivateAdditiveMontageByClass(TSubclassOf<UCameraM
 	if(RemoveIndex.Num()<=0) return;
 	for (int index:RemoveIndex)
 	{
+		if(CameraMontagePlayAdditiveStack[index]->DoOnce)
+		{
+			CameraMontageSequencesAdditiveInstances.Remove(CameraMontagePlayAdditiveStack[index]);
+		}
 		CameraMontagePlayAdditiveStack.RemoveAt(index);
 	}
 }
@@ -292,8 +302,11 @@ void UCameraMontagePlayer::UpdateCameraMontageStack(float DeltaTime)
 		if(RemoveIndex.Num()<=0) return;
 		for (int index:RemoveIndex)
 		{
-			CameraMontagePlayAdditiveStack[index]->OnDeactivate();
-			CameraMontagePlayAdditiveStack.RemoveAt(index);
+			if(CameraMontagePlayAdditiveStack.Num()<=index)
+			{
+				CameraMontagePlayAdditiveStack[index]->OnDeactivate();
+				CameraMontagePlayAdditiveStack.RemoveAt(index);
+			}
 		}
 	}
 	
@@ -314,6 +327,8 @@ UCameraMontageSequence* UCameraMontagePlayer::GetSequenceInstance(TSubclassOf<UC
 			}
 		}
 		Sequence=NewObject<UCameraMontageSequence>(this,SequenceClass);
+		Sequence->ViewInfoFactory=Cast<AActionPlayerCameraManager>(GetOuter())->ViewInfoFactory;
+		if(Sequence->DoOnce) return Sequence;
 		CameraMontageSequencesAdditiveInstances .Add(Sequence);
 	return Sequence;
 	case ECameraMontagePlayType::Modify:
@@ -325,8 +340,10 @@ UCameraMontageSequence* UCameraMontagePlayer::GetSequenceInstance(TSubclassOf<UC
 			}
 		}
 		Sequence=NewObject<UCameraMontageSequence>(this,SequenceClass);
+		Sequence->ViewInfoFactory=Cast<AActionPlayerCameraManager>(GetOuter())->ViewInfoFactory;
+		if(Sequence->DoOnce) return Sequence;
 		CameraMontageSequenceModifyInstances.Add(Sequence);
-		return NewObject<UCameraMontageSequence>(this,SequenceClass);
+		return Sequence;
 	}
 	return nullptr;
 }
@@ -340,7 +357,7 @@ FCameraMontageValueCalculateFactory* UCameraMontagePlayer::GetCameraMontageValue
 	return CameraMontageValueCalculateFactory.Get();
 }
 
-void UCameraMontagePlayer::UpdateCameraMontagePlay(float DeltaTime, FActionCameraNormalViewInfo& NormalViewInfo,FActionCameraNormalViewInfo & NormalViewInfoCache)
+void UCameraMontagePlayer::UpdateCameraMontagePlay(float DeltaTime, FActionCameraNormalViewInfo& NormalViewInfo,FActionCameraNormalViewInfo & NormalViewInfoCache,FActionCameraNormalViewInfo & AdditiveViewInfoCache,FActionCameraNormalViewInfo & ModifyViewInfoCache)
 {
 	UpdateCameraMontageStack(DeltaTime);
 	//场景修改后的位置。
@@ -350,6 +367,8 @@ void UCameraMontagePlayer::UpdateCameraMontagePlay(float DeltaTime, FActionCamer
 	UpdateCameraMontageModifyPlay(DeltaTime,ModifyViewInfo,NormalViewInfoCache);
 	UpdateCameraMontageAdditivePlay(DeltaTime,AdditiveWorldViewInfo);
 	ProcessFindChangedMontage(DeltaTime,NormalViewInfoCache,AdditiveWorldViewInfo,ModifyViewInfo,NormalViewInfo);
+	AdditiveViewInfoCache=AdditiveWorldViewInfo;
+	ModifyViewInfoCache=ModifyViewInfo;
 
 
 }

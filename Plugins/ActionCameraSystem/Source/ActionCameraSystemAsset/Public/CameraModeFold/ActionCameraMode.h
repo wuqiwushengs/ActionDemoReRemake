@@ -3,10 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CameraViewInfoFactory.h"
 #include "CameraDataFold/ActionCameraTypes.h"
 #include "CameraDataFold/BlendData.h"
 #include "UObject/Object.h"
 #include "ActionCameraMode.generated.h"
+class ACameraViewInfoFactory;
 class UActionCameraStack;
 /**
  * 
@@ -25,25 +27,33 @@ public:
 	void UpdateFreeMovementView(float DeltaTime);
 	void UpdateSpringArmFunc(FActionCameraNormalViewInfo & CameraNormalViewInfo,float DeltaTime);
 	void UpdateBlendWeight(float DeltaTime);
+	UFUNCTION(BlueprintCallable)
 	AActionPlayerCameraManager * GetPlayerCameraManager() const ;
 	AActor * GetTargetActor() const ;
 	virtual void DrawDebug(UCanvas * Canvas);
+	UFUNCTION(BlueprintCallable,BlueprintNativeEvent)
+	AActor * SetTargetActor();
+	AActor* SetTargetActor_Implementation();
 	UFUNCTION()
 	float GetBlendAlpha() const  {return  BlendAlpha;} 
 	UFUNCTION()
 	float GetBlendWeight() const {return BlendWeight;}  
 	void SetBlendWeight(EBlendType BlendType,float Weight=0);
 	FGuid CameraID;
+	//用于一些演出类型，避免过多临时演出类型存储到堆栈造成膨胀;
+	UPROPERTY(EditDefaultsOnly)
+	bool DoOnce=false;
 	UPROPERTY(EditAnywhere)
 	FBlendCurveInfo BlendCurveInfo;
 	UPROPERTY(BlueprintReadOnly)
+	ACameraViewInfoFactory * ViewInfoFactory;
 	EBlendType CurrentBlendMode=EBlendType::WaitAdd;
 	virtual  FActionCameraNormalViewInfo GetActionCameraOffsetValue();
 	virtual FActionCameraNormalViewInfo GetActionCameraViewInfo() const;
-	//仅仅附加一次的相机offset
+	//仅仅附加一次的相机offset 用在Settled模式当中
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
 	FActionCameraNormalViewInfo CameraOffset;
-	//根据Pitch轴角度进行映射的相机偏移offset
+	//根据Pitch轴角度进行映射的相机偏移offset 用在Freedom模式当中
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
 	FCameraOffsetMapCurve OffsetMapCurve;
 	UPROPERTY(BlueprintReadOnly)
@@ -78,11 +88,16 @@ protected:
 	{
 		BlendAlpha=0.0f;
 		BlendWeight=0.0f;
+		SettledTargetActor=nullptr;
 	};
 	virtual FVector GetPivotLocation() const;
 	virtual FRotator GetPivotRotation() const;
+	virtual FVector GetPivotAfterOffsetLocation()const;
+
 private:
 	float BlendAlpha=0.0f;
 	float BlendWeight=0.0f;
 	FVector LastPivot;
+	UPROPERTY()
+	AActor * SettledTargetActor;
 };

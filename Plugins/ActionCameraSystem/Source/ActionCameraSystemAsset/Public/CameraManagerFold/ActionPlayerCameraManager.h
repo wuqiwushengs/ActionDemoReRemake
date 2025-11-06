@@ -5,8 +5,10 @@
 #include "CoreMinimal.h"
 #include "Camera/PlayerCameraManager.h"
 #include "CameraModeFold/ActionCameraStack.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "ActionPlayerCameraManager.generated.h"
 
+class ACameraViewInfoFactory;
 class UPostBlendbaseMode;
 class UPostBlendStack;
 class UCameraMontagePlayer;
@@ -20,51 +22,58 @@ struct FCameraSceneColorChange;
 /**
  * 
  */
-DECLARE_DELEGATE_RetVal(TSubclassOf<UActionCameraMode>,FCameraModeDelegate)
 UCLASS()
 class ACTIONCAMERASYSTEMASSET_API AActionPlayerCameraManager : public APlayerCameraManager
 {
 	GENERATED_BODY()
 public:
 	AActionPlayerCameraManager();
+	/*CameraAvoidance*/
+	UPROPERTY(EditDefaultsOnly)
+	float AvoidanceSphereSize=30.0f;
+	UPROPERTY(EditDefaultsOnly)
+	TEnumAsByte<ETraceTypeQuery> AvoidanceTraceType;
+	UPROPERTY(EditDefaultsOnly)
+	TEnumAsByte<EDrawDebugTrace::Type> AvoidanceDebugType;
+	UPROPERTY(EditDefaultsOnly)
+	TArray<TSubclassOf<AActor>> IgnoreActor;
+	UPROPERTY(EditDefaultsOnly)
+	float AvoidanceInterpSpeed=20.0;
+	/*CameraMontage*/
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UCameraMontagePlayer> MontagePlayerClass;
 	UPROPERTY(Transient)
 	UCameraMontagePlayer * CameraMontagePlayer;
+	/*CameraMode*/
 	UPROPERTY(Transient)
 	UActionCameraStack * CameraStack;
 	UFUNCTION(BlueprintCallable,BlueprintPure)
 	UCameraMontagePlayer * GetCameraMontagePlayer() {return CameraMontagePlayer;}
-	/*你可以预先在玩家组件中添加摄像机,摄像机管理器中会自动添加相机内容，也可以直接赋值*/
-	TMap<ECameraForm, UCameraComponent *> OwnedCamera;
-	UPROPERTY(EditAnywhere,BlueprintReadOnly)
-	ECameraForm DefaultCameraForm;
-	//通过缓存的方式降低获取时的消耗 需要和SetComponent配合使用
-	UPROPERTY(BlueprintReadOnly,Transient)
-	UCameraComponent * CurrentActiveCameraCache;
-	UPROPERTY(BlueprintReadOnly,Transient)
-	ECameraForm  CurrentActiveCameraTypeCache;
-	UFUNCTION(BlueprintCallable,BlueprintPure)
-	UCameraComponent * GetCurrentActiveCameraComponent(ECameraForm & CameraForm );
-	TArray<UCameraComponent *> GetUnActivateCameraComponent();
-	//必须用这个来设置相机组件，默认设置相机组件会自动设置不需要通过此管理
-	UFUNCTION(BlueprintCallable)
-	void SetCurrentActiveCameraComponent(ECameraForm ActiveCameraEnum);
-	void SetAllCameraLocationAndRotation();
 	//更新的最后使用。 这个offset是相对于摄像机方向。
+	UFUNCTION(BlueprintCallable)
 	void AddCameraOffset(FVector NewOffset,float FovOffset) ;
+	UPROPERTY(EditDefaultsOnly)
 	FVector CameraViewLocationOffset;
+	UPROPERTY(EditDefaultsOnly)
 	float CameraViewFovOffset;
 	//需要的内容需要绑定到这个位置
-	FCameraModeDelegate CameraModeBindSingleDelegate;
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UActionCameraMode> DefaultCameraMode;
+	UFUNCTION(BlueprintCallable)
+	void PushCameraMode(TSubclassOf<UActionCameraMode> CameraMode);
+	UPROPERTY(BlueprintReadOnly)
+	ACameraViewInfoFactory* ViewInfoFactory; 
 private:
 	virtual void InitializeFor(class APlayerController* PC) override;
 	virtual void BeginPlay() override;
 	//在CameraStack中更新位置数据是进行Interp处理。
 	virtual void UpdateViewTarget(FTViewTarget& OutVT, float DeltaTime) override;
-	void UpdateCameraModes();
 	void UpdateActionCameraValue(FMinimalViewInfo  &OutPOV,float DeltaTime);
 	void UpdateCameraLag(FActionCameraNormalViewInfo &ActionCameraNormalViewInfo,float DeltaTime);
+	FActionCameraNormalViewInfo AdditiveViewInfoCache;
+	FActionCameraNormalViewInfo ModifyViewInfoCache;
+	//避障处理
+	void UpdateCameraAvoidance(FActionCameraNormalViewInfo &ActionCameraNormalViewInfo,FActionCameraNormalViewInfo Cache,float DeltaTime);
 public:
 	UPROPERTY(EditDefaultsOnly)
 	bool bDoRotationLag;
@@ -81,7 +90,7 @@ public:
 	bool bUseCameraTimeStep;
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,meta=(EditCondition="bUseCameraTimeStep",ClampMin="0.005",ClampMax="0.5",UIMin="0.005",UIMax="0.5"))
 	float CameraLagMaxTimeStep;
-	FActionCameraNormalViewInfo GetLastUpdateCameraNormalViewInfo() { return CameraNormalViewInfoCache;}
+	const FActionCameraNormalViewInfo & GetLastUpdateCameraNormalViewInfo() { return CameraNormalViewInfoCache;}
 #pragma region Debug
 	virtual void DisplayDebug(class UCanvas* Canvas, const class FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos) override;
 #pragma  endregion

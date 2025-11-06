@@ -26,7 +26,7 @@ namespace CameraMontageBlend
 {
 	  float GetCorrectBlendWeight( ECameraMontageBlendType MontageBlendType,FBlendData BlendInfo,float BlendAlpha);
 	//注意这个必须是目标自身不然获取不到相机
-	 FPivotInfo GetCorrectAdditivePivot(EAdditiveType AdditiveType,AActor * FollowTarget);
+	 FPivotInfo GetCorrectAdditivePivot(EAdditiveType AdditiveType,AActor * FollowTarget,AActor* ManagerControlled);
 	FMinimalViewInfo GetAnimationSequenceTransformInfo( UCameraMontageSequence *  Sequence);
 }
 //仅仅用来计算相机的位置

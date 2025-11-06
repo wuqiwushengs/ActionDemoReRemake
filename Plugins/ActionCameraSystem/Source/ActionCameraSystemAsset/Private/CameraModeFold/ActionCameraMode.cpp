@@ -43,6 +43,28 @@ void UActionCameraMode::UpdateView(float DeltaTime)
 void UActionCameraMode::UpdateSettledView(float DeltaTime)
 {
 	ViewInfo=FixedViewInfo+CameraOffset;
+	if(!SettledTargetActor)
+	{
+		if(SettledTargetActor=SetTargetActor();SettledTargetActor)
+		{
+			ViewInfo.CameraLocation= SettledTargetActor->GetActorLocation();
+			UE_LOG(LogTemp,Warning,TEXT("Location %s"), *ViewInfo.CameraLocation.ToString())
+			ViewInfo.CameraRotation= SettledTargetActor->GetActorRotation();
+			ViewInfo.FOV=FixedViewInfo.FOV;
+			ViewInfo=ViewInfo+CameraOffset;
+			return;
+		}
+	}
+	else
+	{
+		ViewInfo.CameraLocation= SettledTargetActor->GetActorLocation();
+		UE_LOG(LogTemp,Warning,TEXT("Location %s"), *ViewInfo.CameraLocation.ToString())
+		ViewInfo.CameraRotation= SettledTargetActor->GetActorRotation();
+		ViewInfo.FOV=FixedViewInfo.FOV;
+		ViewInfo=ViewInfo+CameraOffset;
+	}
+	
+	
 }
 
 void UActionCameraMode::UpdateFreeMovementView(float DeltaTime)
@@ -65,6 +87,16 @@ void UActionCameraMode::UpdateFreeMovementView(float DeltaTime)
 			const FVector TargetVectorOffset=OffsetMapCurve.LocationInfo->GetVectorValue(GetPivotRotation().Pitch);
 			ViewInfo.CameraLocation+=FRotationMatrix(ViewInfo.CameraRotation).TransformVector(TargetVectorOffset);
 		}
+}
+FVector UActionCameraMode::GetPivotAfterOffsetLocation() const
+{
+	if(PlacedMode==ECameraPlacedMode::FreeMovement)
+	{
+		FRotator PivotRotation=GetPivotRotation();
+		FVector PivotLocation=LastPivot+FRotationMatrix(PivotRotation).TransformVector(SpringArmInfo.CameraOffset);
+		return PivotLocation;
+	}
+	return ViewInfo.CameraLocation;
 }
 
 void UActionCameraMode::UpdateSpringArmFunc(FActionCameraNormalViewInfo& CameraNormalViewInfo,float Deltatime)
@@ -126,16 +158,22 @@ void UActionCameraMode::DrawDebug(UCanvas * Canvas)
 	DisplayDebugManager.DrawString(FString::Printf(TEXT("CurrentModeWeight %f"),BlendWeight));
 }
 
-void UActionCameraMode::SetBlendWeight(EBlendType BlendType,float Weight)
+AActor* UActionCameraMode::SetTargetActor_Implementation()
 {
+	return nullptr;
+}
+
+void UActionCameraMode::SetBlendWeight(EBlendType BlendType,float Weight)
+{	CurrentBlendMode=BlendType;
 	//如果切换为WaitToAdd的话那么就退出。
 	if(BlendType==EBlendType::WaitAdd)
 	{
 		BlendWeight=0.0f;
 		BlendAlpha=0.0f;
+		
 	}
 	//如果设置为混入那么就重新设置权重
-	if(CurrentBlendMode==EBlendType::BlendIn)
+	if(BlendType==EBlendType::BlendIn)
 	{
 		//这里是反向推导Alpha所以需要反过来。
 		BlendWeight=FMath::Clamp(Weight,0,1);
@@ -214,4 +252,6 @@ FRotator UActionCameraMode::GetPivotRotation() const
 	}
 	return FRotator(0,0,0);
 }
+
+
 

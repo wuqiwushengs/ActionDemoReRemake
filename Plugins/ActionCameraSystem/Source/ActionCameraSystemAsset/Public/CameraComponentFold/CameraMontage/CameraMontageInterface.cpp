@@ -27,10 +27,10 @@ namespace CameraMontageBlend
 		}
 	}
 
-	FPivotInfo GetCorrectAdditivePivot(EAdditiveType AdditiveType, AActor* FollowTarget)
+	FPivotInfo GetCorrectAdditivePivot(EAdditiveType AdditiveType, AActor* FollowTarget,AActor* ManagerControlled)
 	{
 		FPivotInfo PivotInfo;
-		AActionPlayerCameraManager * PlayerCameraManager=CameraGlobalFunc::TryGetPlayerCameraManager(FollowTarget);
+		AActionPlayerCameraManager * PlayerCameraManager=CameraGlobalFunc::TryGetPlayerCameraManager(ManagerControlled);
 		FVector CameraLocation=PlayerCameraManager->GetLastUpdateCameraNormalViewInfo().CameraLocation;
 		FRotator CameraRotation=PlayerCameraManager->GetLastUpdateCameraNormalViewInfo().CameraRotation;
 		switch (AdditiveType)
@@ -87,7 +87,7 @@ void FCameraMontageFixTransformFactory::ProcessCameraMontagePlayAdditive(FAction
 	UCameraMontageSequence* Sequence,float BlendWeight)
 {
 	 FActionCameraNormalViewInfo ModifyInfo=Sequence->CameraAnimMontageInfo.MontageInfo.FixedRelativeTransformInfo.FixedViewInfo;
-	 FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(Sequence->CameraAnimMontageInfo.AdditiveType,Sequence->GetTargetActor());
+	 FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(Sequence->CameraAnimMontageInfo.AdditiveType,Sequence->GetTargetActor(),Sequence->GetControlledPlayer());
 	AdditiveViewInfo.CameraLocation=PivotInfo.GetCorrectLocation(AdditiveViewInfo.CameraLocation,ModifyInfo.CameraLocation*BlendWeight);
 	AdditiveViewInfo.CameraRotation+=ModifyInfo.CameraRotation*BlendWeight;
 	AdditiveViewInfo.FOV+=ModifyInfo.FOV*BlendWeight;
@@ -98,7 +98,7 @@ void FCameraMontageFixTransformFactory::ProcessCameraMontagePlayModify(FActionCa
 {
 	FActionCameraNormalViewInfo ModifyInfo=Sequence->CameraAnimMontageInfo.MontageInfo.FixedRelativeTransformInfo.FixedViewInfo;
 	//获取的旋转这里永远是Target的位置以及旋转等信息
-	FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(EAdditiveType::TargetActorLocation,Sequence->GetTargetActor());
+	FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(EAdditiveType::TargetActorLocation,Sequence->GetTargetActor(),Sequence->GetControlledPlayer());
 	FVector SocketLocation=Sequence->GetSocketLocation();
 	DrawDebugSphere(Sequence->GetWorld(),SocketLocation,10.0f,3,FColor::Blue,false,3,2,3);
 	ModifyViewInfo.CameraLocation=PivotInfo.GetCorrectLocation(SocketLocation,ModifyInfo.CameraLocation);
@@ -117,7 +117,7 @@ void FCameraMontageCurveMontageFactory::ProcessCameraMontagePlayAdditive(FAction
 	FVector RotatorVec=MontageCurve.RotationInfo? MontageCurve.RotationInfo->GetVectorValue(PlayTime):FVector(0,0,0);
 	FRotator Rotator=FRotator(RotatorVec.Y,RotatorVec.Z,RotatorVec.X);
 	float Fov=MontageCurve.FovInfo?MontageCurve.FovInfo->GetFloatValue(PlayTime):0.0f;
-	FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(Sequence->CameraAnimMontageInfo.AdditiveType,Sequence->GetTargetActor());
+	FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(Sequence->CameraAnimMontageInfo.AdditiveType,Sequence->GetTargetActor(),Sequence->GetControlledPlayer());
 	AdditiveViewInfo.CameraLocation=PivotInfo.GetCorrectLocation(AdditiveViewInfo.CameraLocation,Location*BlendWeight);
 	AdditiveViewInfo.CameraRotation+=Rotator*BlendWeight;
 	AdditiveViewInfo.FOV+=Fov*BlendWeight;
@@ -134,7 +134,7 @@ void FCameraMontageCurveMontageFactory::ProcessCameraMontagePlayModify(FActionCa
 	FRotator Rotator=FRotator(RotatorVec.Y,RotatorVec.Z,RotatorVec.X);
 	float Fov=MontageCurve.FovInfo?MontageCurve.FovInfo->GetFloatValue(PlayTime):0.0f;
 	FVector SocketLocation=Sequence->GetSocketLocation();
-	FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(EAdditiveType::TargetActorLocation,Sequence->GetTargetActor());
+	FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(EAdditiveType::TargetActorLocation,Sequence->GetTargetActor(),Sequence->GetControlledPlayer());
 	ModifyViewInfo.CameraLocation=PivotInfo.GetCorrectLocation(SocketLocation,Location);
 	ModifyViewInfo.CameraRotation=Rotator+Sequence->GetTargetActor()->GetActorRotation();
 	ModifyViewInfo.FOV=Fov;
@@ -144,7 +144,7 @@ void FCameraMontageAnimSequenceMontageFactory::ProcessCameraMontagePlayAdditive(
 	FActionCameraNormalViewInfo& AdditiveViewInfo, UCameraMontageSequence* Sequence,float BlendWeight)
 {
 	FMinimalViewInfo MinimalViewInfo=CameraMontageBlend::GetAnimationSequenceTransformInfo(Sequence);
-	FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(Sequence->CameraAnimMontageInfo.AdditiveType,Sequence->GetTargetActor());
+	FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(Sequence->CameraAnimMontageInfo.AdditiveType,Sequence->GetTargetActor(),Sequence->GetControlledPlayer());
 	AdditiveViewInfo.CameraLocation=PivotInfo.GetCorrectLocation(AdditiveViewInfo.CameraLocation,MinimalViewInfo.Location*BlendWeight);
 	AdditiveViewInfo.CameraRotation+=MinimalViewInfo.Rotation*BlendWeight;
 	AdditiveViewInfo.FOV+=MinimalViewInfo.FOV*BlendWeight;
@@ -154,7 +154,7 @@ void FCameraMontageAnimSequenceMontageFactory::ProcessCameraMontagePlayModify(
 	FActionCameraNormalViewInfo& ModifyViewInfo, UCameraMontageSequence* Sequence)
 {
 	FMinimalViewInfo MinimalViewInfo=CameraMontageBlend::GetAnimationSequenceTransformInfo(Sequence);
-	FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(EAdditiveType::TargetActorLocation,Sequence->GetTargetActor());
+	FPivotInfo PivotInfo=CameraMontageBlend::GetCorrectAdditivePivot(EAdditiveType::TargetActorLocation,Sequence->GetTargetActor(),Sequence->GetControlledPlayer());
 	FVector SocketLocation=Sequence->GetSocketLocation();
 	ModifyViewInfo.CameraLocation=PivotInfo.GetCorrectLocation(SocketLocation,MinimalViewInfo.Location);
 	ModifyViewInfo.CameraRotation=MinimalViewInfo.Rotation+Sequence->GetTargetActor()->GetActorRotation();;
