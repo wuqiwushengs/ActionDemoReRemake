@@ -29,4 +29,7 @@ class ACTIONSKILLASSETRUNTIME_API ICollisionSystemInterface
 public:
 	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
 	UAttackCollisionComponent * GetAttackCollisionComponent();
+	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
+	void OnBeAttackRecallInternal(FAttackedResult AttackedResult);
+	
 };

@@ -27,6 +27,10 @@ public:
 	virtual void OnAttacktoTagretRecall(TArray<FHitResult> HitResults) override;
 	virtual void OnBeAttackedRecall(FAttackedResult AttackedResult) override;
 protected:
+	//用来进行
+	FTimerHandle AttackHandle;
 	UPROPERTY(EditDefaultsOnly)
 	float bHurtCoolTime=0.2f;
+	UPROPERTY(EditDefaultsOnly)
+	bool CanHurt=true;
 };

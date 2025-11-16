@@ -14,6 +14,8 @@ struct FAttackedResult
 	FHitResult HitResult;
 	UPROPERTY(BlueprintReadWrite)
 	AActor * Attacker;
+	UPROPERTY(BlueprintReadWrite)
+	float DamageAmount=0.0f;
 };
 
 struct FBaseMeshInfo

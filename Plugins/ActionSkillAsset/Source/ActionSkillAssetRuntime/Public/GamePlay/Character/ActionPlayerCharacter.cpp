@@ -50,6 +50,11 @@ UAttackCollisionComponent* AActionPlayerCharacter::GetAttackCollisionComponent_I
 	return AttackCollisionComponent;
 }
 
+void AActionPlayerCharacter::OnBeAttackRecallInternal_Implementation(FAttackedResult AttackedResult)
+{
+	UE_LOG(LogTemp,Warning,TEXT("I Was Attacked"));
+}
+
 
 // Called when the game starts or when spawned
 void AActionPlayerCharacter::BeginPlay()

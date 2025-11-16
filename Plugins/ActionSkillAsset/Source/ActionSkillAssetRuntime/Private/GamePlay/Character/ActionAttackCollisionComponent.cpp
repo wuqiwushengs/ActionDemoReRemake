@@ -39,7 +39,7 @@ void UActionAttackCollisionComponent::TickComponent(float DeltaTime, ELevelTick 
 void UActionAttackCollisionComponent::OnAttacktoTagretRecall(TArray<FHitResult> HitResults)
 {
 	FAttackedResult  AttackedResult;
-	AActor * Self=Cast<AActor>(GetTypedOuter<ACharacter>());
+	AActor * Self=GetOwner();
 	//目前只对攻击到的角色进行处理
 	if(HitResults.Num()<=0) return;
 	for(FHitResult Result:HitResults)
@@ -47,11 +47,24 @@ void UActionAttackCollisionComponent::OnAttacktoTagretRecall(TArray<FHitResult> 
 		if(!Result.GetActor()) continue;
 		AttackedResult.Attacker=Self;
 		AttackedResult.HitResult=Result;
+		AttackedResult.DamageAmount=1.0f;
 		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(Result.GetActor())->OnBeAttackedRecall(AttackedResult);
 	}
 }
 void UActionAttackCollisionComponent::OnBeAttackedRecall(FAttackedResult AttackedResult)
 {
-		
+	if(CanHurt)
+	{
+		ICollisionSystemInterface::Execute_OnBeAttackRecallInternal(GetOwner(),AttackedResult);
+	}
+	CanHurt=false;
+	if(!AttackHandle.IsValid()||GetOwner()->GetWorld()->GetTimerManager().IsTimerPending(AttackHandle))
+	{
+		GetOwner()->GetWorld()->GetTimerManager().SetTimer(AttackHandle,[this]()
+		{
+		   CanHurt=true;		
+		},bHurtCoolTime,false);
+	}
+	
 }
 
