@@ -29,18 +29,16 @@ class ACTIONCAMERASYSTEMASSET_API AActionPlayerCameraManager : public APlayerCam
 public:
 	AActionPlayerCameraManager();
 	/*CameraAvoidance*/
-	UPROPERTY(EditDefaultsOnly)
-	float AvoidanceSphereSize=30.0f;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly,Category="Avoidance")
 	TEnumAsByte<ETraceTypeQuery> AvoidanceTraceType;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly,Category="Avoidance")
 	TEnumAsByte<EDrawDebugTrace::Type> AvoidanceDebugType;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly,Category="Avoidance")
 	TArray<TSubclassOf<AActor>> IgnoreActor;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly,Category="Avoidance")
 	float AvoidanceInterpSpeed=20.0;
 	/*CameraMontage*/
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly,Category="Montage")
 	TSubclassOf<UCameraMontagePlayer> MontagePlayerClass;
 	UPROPERTY(Transient)
 	UCameraMontagePlayer * CameraMontagePlayer;
@@ -52,9 +50,9 @@ public:
 	//更新的最后使用。 这个offset是相对于摄像机方向。
 	UFUNCTION(BlueprintCallable)
 	void AddCameraOffset(FVector NewOffset,float FovOffset) ;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly,Category="Offset")
 	FVector CameraViewLocationOffset;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly,Category="Montage")
 	float CameraViewFovOffset;
 	//需要的内容需要绑定到这个位置
 	UPROPERTY(EditDefaultsOnly)
@@ -75,20 +73,26 @@ private:
 	//避障处理
 	void UpdateCameraAvoidance(FActionCameraNormalViewInfo &ActionCameraNormalViewInfo,FActionCameraNormalViewInfo Cache,float DeltaTime);
 public:
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="CameraLock")
+	bool LockX=false;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="CameraLock")
+	bool LockY=false;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="CameraLock")
+	bool LockZ=false;
+	UPROPERTY(EditDefaultsOnly,Category="CameraLag")
 	bool bDoRotationLag;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly,Category="CameraLag")
 	bool bDoLocationLag;
-	UPROPERTY(EditDefaultsOnly,meta=(EditCondition="bDoLocationLag"))
+	UPROPERTY(EditDefaultsOnly,meta=(EditCondition="bDoLocationLag"),Category="CameraLag")
 	float CameraLagSpeed=5.0;
-	UPROPERTY(EditDefaultsOnly,meta=(EditCondition="bDoRotationLag"))
+	UPROPERTY(EditDefaultsOnly,meta=(EditCondition="bDoRotationLag"),Category="CameraLag")
 	float CameraRotationLagSpeed=5.0f;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly,Category="CameraLag")
 	float PivotLagSpeed=5.0f;
 	//迭代时间
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="CameraLag")
 	bool bUseCameraTimeStep;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,meta=(EditCondition="bUseCameraTimeStep",ClampMin="0.005",ClampMax="0.5",UIMin="0.005",UIMax="0.5"))
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,meta=(EditCondition="bUseCameraTimeStep",ClampMin="0.005",ClampMax="0.5",UIMin="0.005",UIMax="0.5"),Category="CameraLag")
 	float CameraLagMaxTimeStep;
 	const FActionCameraNormalViewInfo & GetLastUpdateCameraNormalViewInfo() { return CameraNormalViewInfoCache;}
 #pragma region Debug

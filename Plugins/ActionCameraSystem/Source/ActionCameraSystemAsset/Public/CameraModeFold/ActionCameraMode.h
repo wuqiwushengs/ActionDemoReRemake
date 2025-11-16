@@ -50,7 +50,7 @@ public:
 	EBlendType CurrentBlendMode=EBlendType::WaitAdd;
 	virtual  FActionCameraNormalViewInfo GetActionCameraOffsetValue();
 	virtual FActionCameraNormalViewInfo GetActionCameraViewInfo() const;
-	//仅仅附加一次的相机offset 用在Settled模式当中
+	//仅仅附加一次的相机offset 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
 	FActionCameraNormalViewInfo CameraOffset;
 	//根据Pitch轴角度进行映射的相机偏移offset 用在Freedom模式当中
@@ -80,16 +80,32 @@ public:
 protected:
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
 	FGameplayTag CameraTypeTag;
-	virtual void OnActivation()
-	{
-		UE_LOG(LogTemp,Warning,TEXT("Activation"))
-	};
-	virtual void OnDeactivation()
+	
+	
+	void OnActivation();
+	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
+	void OnActivationBP();
+	void  OnActivationBP_Implementation();
+	void OnDeactivation()
 	{
 		BlendAlpha=0.0f;
 		BlendWeight=0.0f;
 		SettledTargetActor=nullptr;
+		OnDeactivationBP();
 	};
+	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
+	void OnDeactivationBP();
+	void OnDeactivationBP_Implementation()
+	{
+	
+	};
+	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
+	void OnBlendIn();
+	void OnBlendIn_Implementation();
+	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
+	void OnLoop();
+	void OnLoop_Implementation();
+	
 	virtual FVector GetPivotLocation() const;
 	virtual FRotator GetPivotRotation() const;
 	virtual FVector GetPivotAfterOffsetLocation()const;

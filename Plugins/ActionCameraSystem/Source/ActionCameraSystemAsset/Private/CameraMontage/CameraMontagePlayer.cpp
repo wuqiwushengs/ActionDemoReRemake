@@ -62,6 +62,7 @@ void UCameraMontageSequence::SetBlendType(ECameraMontageBlendType BlendType)
 		PlayedTime=0.0f;
 		break;
 	case ECameraMontageBlendType::BlendIn:
+		OnBlendIn();
 		{CurrentBlendWeight=FMath::Clamp(CurrentBlendWeight,0,1);
 		FBlendCurveInfo BlendInfo=CameraAnimMontageInfo.MontageInfo.BlendInfo.BlendInCurveInfo;
 		float InvExponent=(BlendInfo.BlendExp>0.0f)?(1.0f/BlendInfo.BlendExp):1.0f;
@@ -70,13 +71,14 @@ void UCameraMontageSequence::SetBlendType(ECameraMontageBlendType BlendType)
 		break;
 		}
 	case ECameraMontageBlendType::Loop:
+		OnLoop();
 		CurrentBlendAlpha=0.0f;
 		break;
 	case ECameraMontageBlendType::BlendOut:
+		OnBlendOut();
 		break;
 	}
 }
-
 void UCameraMontageSequence::OnDeactivate()
 {
 	if(CameraAnimMontageInfo.MontageInfo.MontageType==ECameraMontageType::AnimSequenceMontage&&CameraAnimMontageInfo.MontageInfo.CameraSequence.CameraSequence)
@@ -84,6 +86,7 @@ void UCameraMontageSequence::OnDeactivate()
 		CameraAnimMontageInfo.MontageInfo.CameraSequence.GetCameraAnimationSequencePlayerInstance(this)->Stop();
 	}
 	TargetActor=nullptr;
+	OnDeactivationBP();
 }
 
 void UCameraMontageSequence::OnActive()
@@ -93,6 +96,18 @@ void UCameraMontageSequence::OnActive()
 		CameraAnimMontageInfo.MontageInfo.CameraSequence.InitializeCameraSequence(this);
 		CameraAnimMontageInfo.MontageInfo.CameraSequence.GetCameraAnimationSequencePlayerInstance(this)->Play(true,false);
 	}
+	OnActivationBP();
+}
+void UCameraMontageSequence::OnBlendOut_Implementation()
+{
+}
+
+void UCameraMontageSequence::OnBlendIn_Implementation()
+{
+}
+
+void UCameraMontageSequence::OnLoop_Implementation()
+{
 }
 
 void UCameraMontageSequence::UpdateCameraMontageSequence(float DeltaTime,FActionCameraNormalViewInfo & MontageViewInfo)

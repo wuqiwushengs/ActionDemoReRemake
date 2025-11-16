@@ -49,11 +49,11 @@ public:
 	USkeletalMeshComponent * GetSkeletalMeshComponent();
 	TArray<TObjectPtr<UStaticMeshComponent>> GetStaticMeshComponent();
 	TArray<FName> GetSocketNames(ECollisionType CollisionType);
-	void OnAttacktoTagretRecall(TArray<FHitResult> HitResults);
-	
+	 virtual  void OnAttacktoTagretRecall(TArray<FHitResult> HitResults);
+	virtual  void OnBeAttackedRecall(FAttackedResult AttackedResult);
 protected:
 	//这个函数用来处理被打击的情况，通常会被OnAttacktoTargetRecall所调用
-	void OnBeAttackedRecall(FAttackedResult AttackedResult);
+	
 	// Called when the game starts
 	virtual void BeginPlay() override;
 	TMap<ECollisionType,FBaseMeshInfo> TraceInfo;

@@ -133,9 +133,25 @@ void AActionPlayerCameraManager::UpdateActionCameraValue(FMinimalViewInfo & OutP
 	CameraStack->EvaluateStack(DeltaTime,StackViewInfo);
 	StackViewInfo.CameraLocation+=FRotationMatrix(StackViewInfo.CameraRotation).TransformVector(CameraViewLocationOffset);
 	OutPOV.FOV+=CameraViewFovOffset;
+	if(!bFirst)
+	{
+		if(LockX)
+		{
+			StackViewInfo.CameraLocation.X=CameraNormalViewInfoCache.CameraLocation.X;
+		}
+		if(LockY)
+		{
+			StackViewInfo.CameraLocation.Y=CameraNormalViewInfoCache.CameraLocation.Y;
+		}
+		if(LockZ)
+		{
+			StackViewInfo.CameraLocation.Z=CameraNormalViewInfoCache.CameraLocation.Z;
+		}
+	}
 	CameraNormalViewInfoCache=StackViewInfo;
 	UpdateCameraLag(StackViewInfo,DeltaTime);
 	//摄像机蒙太奇的更新
+	
 	CameraMontagePlayer->UpdateCameraMontagePlay(DeltaTime,StackViewInfo,CameraNormalViewInfoCache,AdditiveViewInfoCache,ModifyViewInfoCache);
 	//摄像机避障处理的更新
 	//因为MontageInfo是最后的更新缓存所以我们不用原来camera的数据，因为我们不期望改变相机的DesiredLocation而是对其进行更改

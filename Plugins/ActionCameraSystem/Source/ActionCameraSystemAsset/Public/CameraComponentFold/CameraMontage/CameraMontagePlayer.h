@@ -34,10 +34,25 @@ public:
 	void SetBlendType(ECameraMontageBlendType BlendType);
 	ECameraMontageBlendType GetBlendType() { return CameraMontageBlendType;}
 	FGuid Getid() const { return id;}
-	virtual void OnDeactivate() ;
-	virtual void OnActive();
+	void OnDeactivate() ;
+	void OnActive();
+	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
+	void OnActivationBP();
+	void  OnActivationBP_Implementation(){};
+	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
+	void OnDeactivationBP();
+	void OnDeactivationBP_Implementation(){};
+	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
+	void OnBlendOut();
+	void OnBlendOut_Implementation();
+	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
+	void OnBlendIn();
+	void OnBlendIn_Implementation();
+	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
+	void OnLoop();
+	void OnLoop_Implementation();
 	UFUNCTION()
-	virtual void UpdateCameraMontageSequence(float DeltaTime,FActionCameraNormalViewInfo & MontageViewInfo);
+	void UpdateCameraMontageSequence(float DeltaTime,FActionCameraNormalViewInfo & MontageViewInfo);
 	UFUNCTION()
 	AActor * GetTargetActor()
 	{

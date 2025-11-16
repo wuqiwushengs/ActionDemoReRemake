@@ -87,6 +87,9 @@ void UActionCameraMode::UpdateFreeMovementView(float DeltaTime)
 			const FVector TargetVectorOffset=OffsetMapCurve.LocationInfo->GetVectorValue(GetPivotRotation().Pitch);
 			ViewInfo.CameraLocation+=FRotationMatrix(ViewInfo.CameraRotation).TransformVector(TargetVectorOffset);
 		}
+	ViewInfo.CameraLocation=ViewInfo.CameraLocation+FRotationMatrix(ViewInfo.CameraRotation).TransformVector(CameraOffset.CameraLocation);
+	ViewInfo.CameraRotation=ViewInfo.CameraRotation+CameraOffset.CameraRotation;
+	ViewInfo.FOV=ViewInfo.FOV+CameraOffset.FOV;
 }
 FVector UActionCameraMode::GetPivotAfterOffsetLocation() const
 {
@@ -131,7 +134,7 @@ void UActionCameraMode::UpdateBlendWeight(float DeltaTime)
 		BlendWeight=CameraData::BlendInfo::GetBlendWeightFromBlendInFunction(BlendCurveInfo.BlendFunction,
 			BlendCurve,BlendAlpha,BlendCurveInfo.BlendExp);
 		BlendWeight=FMath::Min(BlendWeight,1);
-		if(BlendWeight>=1) {CurrentBlendMode=EBlendType::Loop; return;}
+		if(BlendWeight>=1) {SetBlendWeight(EBlendType::Loop); return;}
 	}
 }
 
@@ -175,11 +178,16 @@ void UActionCameraMode::SetBlendWeight(EBlendType BlendType,float Weight)
 	//如果设置为混入那么就重新设置权重
 	if(BlendType==EBlendType::BlendIn)
 	{
+		OnBlendIn();
 		//这里是反向推导Alpha所以需要反过来。
 		BlendWeight=FMath::Clamp(Weight,0,1);
 		float InvExponent=(BlendCurveInfo.BlendExp>0.0f)?(1.0f/BlendCurveInfo.BlendExp):1.0f;
 		BlendAlpha=CameraData::BlendInfo::GetBlendWeightFromBlendInFunction(BlendCurveInfo.BlendFunction,BlendCurveInfo.BlendCurve,BlendWeight,InvExponent	);
 		BlendAlpha=FMath::Min(BlendWeight,1);
+	}
+	if(BlendType==EBlendType::Loop)
+	{
+		OnLoop();
 	}
 }
 FActionCameraNormalViewInfo UActionCameraMode::GetActionCameraOffsetValue()
@@ -192,6 +200,22 @@ FActionCameraNormalViewInfo UActionCameraMode::GetActionCameraViewInfo() const
 	return ViewInfo;
 }
 
+void UActionCameraMode::OnActivation()
+{
+	OnActivationBP();
+}
+
+void UActionCameraMode::OnActivationBP_Implementation()
+{
+}
+
+void UActionCameraMode::OnBlendIn_Implementation()
+{
+}
+
+void UActionCameraMode::OnLoop_Implementation()
+{
+}
 FVector UActionCameraMode::GetPivotLocation() const
 {
 	if(PlacedMode==ECameraPlacedMode::Settled)
