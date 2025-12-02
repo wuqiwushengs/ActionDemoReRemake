@@ -4,20 +4,32 @@
 #include "CollisionSystem/StaticMeshCollisionCheck.h"
 #include "CollisionSystem/Interface/CollisionSystemInterface.h"
 
+#if WITH_EDITOR
 void UStaticMeshCollisionCheck::OnAnimNotifyCreatedInEditor(FAnimNotifyEvent& ContainingAnimNotifyEvent)
 {
 	Super::OnAnimNotifyCreatedInEditor(ContainingAnimNotifyEvent);
 	EditCollisionContext.CollisionType=ECollisionType::StaticMesh;
 }
-
-
+void UStaticMeshCollisionCheck::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+	EditCollisionContext.SetCollisionInfo();
+	if(PropertyChangedEvent.Property && PropertyChangedEvent.Property->GetName()==TEXT("CollisionType"))
+	{	//强制改成GlobalCollision
+		if(EditCollisionContext.CollisionType !=ECollisionType::StaticMesh)
+		{
+			FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("InstanceCollisionCheck must be StaticMesh")));
+			EditCollisionContext.CollisionType=ECollisionType::StaticMesh;
+		}
+	}
+}
+#endif
 void UStaticMeshCollisionCheck::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
 	float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 	AActor *	CSI=MeshComp->GetOwner();
-	ICollisionSystemInterface * CSIReal=Cast<ICollisionSystemInterface>(CSI);
-	if(CSI&&CSIReal)
+	if(CSI&&CSI->GetClass()->ImplementsInterface(UCollisionSystemInterface::StaticClass()))
 	{	TArray<FName> SocketNames;
 		EditCollisionContext.GetCollisionInfo().GenerateKeyArray(SocketNames);
 		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->StartTrace(SocketNames,EditCollisionContext.CollisionType,EditCollisionContext.SocketStaticMesh);
@@ -36,8 +48,7 @@ void UStaticMeshCollisionCheck::NotifyTick(USkeletalMeshComponent* MeshComp, UAn
 			MeshComp->GetOwner(),CollisionInfo.Key,CollisionInfo.Value));
 	}
 	AActor *	CSI=MeshComp->GetOwner();
-	ICollisionSystemInterface * CSIReal=Cast<ICollisionSystemInterface>(CSI);
-	if(CSI && !FinalHitResult.IsEmpty() && CSIReal)
+	if(CSI && !FinalHitResult.IsEmpty() &&CSI->GetClass()->ImplementsInterface(UCollisionSystemInterface::StaticClass()))
 	{
 		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->OnAttacktoTagretRecall(FinalHitResult);
 	}
@@ -48,8 +59,7 @@ void UStaticMeshCollisionCheck::NotifyEnd(USkeletalMeshComponent* MeshComp, UAni
 {
 	Super::NotifyEnd(MeshComp, Animation, EventReference);
 	AActor *	CSI=MeshComp->GetOwner();
-	ICollisionSystemInterface * CSIReal=Cast<ICollisionSystemInterface>(CSI);
-	if(CSI &&CSIReal)
+	if(CSI &&CSI->GetClass()->ImplementsInterface(UCollisionSystemInterface::StaticClass()))
 	{
 		TArray<FName> SocketNames;
 		EditCollisionContext.GetCollisionInfo().GenerateKeyArray(SocketNames);
@@ -57,16 +67,4 @@ void UStaticMeshCollisionCheck::NotifyEnd(USkeletalMeshComponent* MeshComp, UAni
 	}
 }
 
-void UStaticMeshCollisionCheck::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
-{
-	Super::PostEditChangeProperty(PropertyChangedEvent);
-	EditCollisionContext.SetCollisionInfo();
-	if(PropertyChangedEvent.Property && PropertyChangedEvent.Property->GetName()==TEXT("CollisionType"))
-	{	//强制改成GlobalCollision
-		if(EditCollisionContext.CollisionType !=ECollisionType::StaticMesh)
-		{
-			FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("InstanceCollisionCheck must be StaticMesh")));
-			EditCollisionContext.CollisionType=ECollisionType::StaticMesh;
-		}
-	}
-}
+

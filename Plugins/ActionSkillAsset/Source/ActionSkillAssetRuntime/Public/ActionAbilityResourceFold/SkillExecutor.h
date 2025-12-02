@@ -20,50 +20,48 @@ UCLASS(Blueprintable,EditInlineNew)
 class ACTIONSKILLASSETRUNTIME_API USkillExecutor : public UObject
 {
 	GENERATED_BODY()
+	friend class USkillManager;
 public:
 	UFUNCTION()
 	UActionAbilitySystemComponent *GetOwnerAbilitySystemComponent();
 	
-	void SkillExecutorTickFunc(float DeltaTime);
+	
 	UFUNCTION(BlueprintCallable)
 	void InitializeSkill(FSkillTitle InputSkill,USkillManager * inSkillManager);
+	void InitialSkillState(FSkillTitle InputSkill,USkillManager * inSkillManager);
+	void HandlePreTipSkill();
+	void HandleHoldSkillRelease();
+	void HandleSkillTypes();
 	void InitializeAbility(UActionAbilitySystemComponent * OwnerAbilitySystemComponent);
 	void OnSkillTrigger(FSkillTitle  TriggerInput);
+	//这两个都是在Hold阶段判断是否能够处理这两个技能
+	bool CanProcessHoldSkillTrigger();
+	bool CanProcessMultiSkillTrigger();
+	//当开始连击时的判断
+	bool CanProcessMultiSkillTapTrigger();
 	//外部调用
 	UFUNCTION(BlueprintCallable)
 	void InterruptExecution();
 	UFUNCTION()
-	void OnPreClipEnd();
-	UFUNCTION()
 	void OnClipEnd();
-	
+	bool CanSavetoOffset()
+	{
+		  return SkillContext.bCanSavetoOffset;
+	};
+	static TVariant<TSubclassOf<USkillClip_PlayMontage>, TSubclassOf<USkillClipAbilityBase>> MakeClip(UClass * ClipClass);
 private:
-	void PlayClip(TVariant<TSubclassOf<USkillClip_PlayMontage>,TSubclassOf<USkillClipAbilityBase>> Clip,FName BindFunction);
-	void ResetSkill();
-	void StopCurrentSkill(TVariant<TSubclassOf<USkillClip_PlayMontage>,TSubclassOf<USkillClipAbilityBase>> Clip);
+	void SkillExecutorTickFunc(float DeltaTime);
+	void PlayClip(TVariant<TSubclassOf<USkillClip_PlayMontage>,TSubclassOf<USkillClipAbilityBase>> &&Clip,FName BindFunction);
+	void EndSkill();
+	void StopCurrentSkill();
 	UPROPERTY()
 	TWeakObjectPtr<USkillManager> SkillManager;
 	UFUNCTION(BlueprintCallable,BlueprintPure)
 	USkillManager *GetSkillManager();
 public:
 	#pragma region Skill
-	UPROPERTY(EditAnywhere)
-	bool  bCanSavetoOffset=true;
-	UPROPERTY(EditAnywhere)
-	bool bNeedTipSkill=false;
-	//不需要所有都加内容，只需要加所需要的即可，单击和其他技能相互冲突，不需要一起添加
-	UPROPERTY(EditAnywhere)
-	FSkillContainer PreTipContent;
-	UPROPERTY(EditAnywhere,meta=(EditCondition="bNeedTipSkill"))
-	FTipSkill TipSkill;
-	UPROPERTY(EditAnywhere)
-	bool bNeedHoldSkill=false;
-	UPROPERTY(EditAnywhere,meta=(EditCondition="bNeedHoldSkill"))
-	FHoldSkill HoldSkill;
-	UPROPERTY(EditAnywhere)
-	bool bNeedMultiTipSkill=false;
-	UPROPERTY(EditAnywhere,meta=(EditCondition="bNeedMultiTipSkill"))
-	FMultiTipSkill MultiTipSkill;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
+	FSkillContext SkillContext;
 #pragma endregion
 public:
 	//用来记录蓄力的按键信息,应用在蓄力时
@@ -80,7 +78,20 @@ public:
 	UPROPERTY()
 	FGameplayAbilitySpecHandle PlayedAbilitySpecHandle;
 	TQueue<TVariant<TSubclassOf<USkillClip_PlayMontage>,TSubclassOf<USkillClipAbilityBase>>> LodeSkillClip;
-
+	template<typename  T>
+	void LoadClipToQueue(T arg);
+	template<typename T,typename... Args>
+	void LoadClipToQueue(T first,Args... rest);
+	bool  PlayNextClipInCache()
+	{
+		TVariant<TSubclassOf<USkillClip_PlayMontage>, TSubclassOf<USkillClipAbilityBase>> Out;
+		if (LodeSkillClip.Dequeue(Out))
+		{
+			PlayClip(MoveTemp(Out),TEXT("OnClipEnd"));
+			return true;
+		}
+		return false;
+	}
 	//前一个切片或者是Ability
 	UPROPERTY(BlueprintReadOnly)
 	USkillClip_PlayMontage*  LastExeClip;
@@ -90,3 +101,20 @@ public:
 	bool IsActive=false;
 	
 };
+
+
+template <typename T>
+void USkillExecutor::LoadClipToQueue(T arg)
+{
+	if(arg)
+	{	auto Clip=MakeClip(arg);
+		LodeSkillClip.Enqueue(Clip);
+	}
+}
+template <typename T, typename ... Args>
+void USkillExecutor::LoadClipToQueue(T first, Args... rest)
+{
+	static_assert(std::is_same_v<T,UClass*>);
+	LoadClipToQueue(first);
+	LoadClipToQueue(rest...);
+}

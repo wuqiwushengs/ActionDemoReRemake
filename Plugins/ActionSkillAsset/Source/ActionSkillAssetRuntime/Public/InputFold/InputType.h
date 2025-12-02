@@ -15,11 +15,11 @@ struct FAbilityInputInfo
 	UPROPERTY(BlueprintReadOnly)
 	FGameplayTag InputTag;
 	UPROPERTY()
-	float InputWorldTime;
+	float InputWorldTime=0.0f;
 	UPROPERTY()
-	float InputIntervalTime;
+	float InputIntervalTime=0.0f;
 	UPROPERTY()
-	EInputWeight InputWeight;
+	EInputWeight InputWeight=EInputWeight::Weight0;
 };
 
 

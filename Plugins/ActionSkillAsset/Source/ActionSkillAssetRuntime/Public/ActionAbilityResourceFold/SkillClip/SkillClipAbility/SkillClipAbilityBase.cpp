@@ -32,7 +32,7 @@ void USkillClipAbilityBase::PreEntryAbility_Implementation()
 }
 void USkillClipAbilityBase::OnEntryAbility_Implementation()
 {
-	
+		
 }
 void USkillClipAbilityBase::OnEndAbility_Implementation()
 {
@@ -44,13 +44,13 @@ void USkillClipAbilityBase::EndAbility(const FGameplayAbilitySpecHandle Handle,
 {
 	if (bIsExiting)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s is already exiting, skipping..."), *GetName());
 		return;
 	}
 	bIsExiting = true;;
+	UE_LOG(LogTemp,Warning,TEXT("SkillEnd"))
 	if (!AbilityEvent.ExecuteIfBound())
 	{
-		UE_LOG(LogTemp,Warning,TEXT("%s don't bind End Event"),*GetName());
+		
 	}
 	AbilityEvent.Clear();
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -63,12 +63,12 @@ FEndAbilityEvent& USkillClipAbilityBase::GetAbilitySignal()
 
 float USkillClipAbilityBase::GetHoldMinTime()
 {
-	return Executor->HoldSkill.HoldSkillInfo.MinHoldTime;
+	return Executor->SkillContext.HoldSkill.HoldSkillInfo.MinHoldTime;
 }
 
 float USkillClipAbilityBase::GetCurrentHoldTime()
 {
-	return Executor->HoldSkill.HoldSkillInfo.CurrentHoldTime;
+	return Executor->SkillContext.HoldSkill.HoldSkillInfo.CurrentHoldTime;
 }
 
 const USkillExecutor* USkillClipAbilityBase::GetExecutor()

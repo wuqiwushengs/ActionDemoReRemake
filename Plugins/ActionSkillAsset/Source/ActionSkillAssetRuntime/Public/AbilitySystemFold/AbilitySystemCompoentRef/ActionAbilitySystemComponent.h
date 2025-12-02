@@ -30,7 +30,7 @@ public:
 	UActionAbilitySystemComponent();
 
 protected:
-
+	virtual void DisplayDebug(class UCanvas* Canvas, const class FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos) override;
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
@@ -47,8 +47,7 @@ public:
 	USkillManager * GetSkillManager();
 	UFUNCTION()
 	AActionPlayerCharacter * GetActionPlayerCharacter();
-	UFUNCTION()
-	FCharacterNormalInputData GetCharacterNormalInputData();
+	FCharacterNormalInputData GetControlledCharacterNormalInputData();
 #pragma  region State
 	UPROPERTY()
 	FGameplayTag CurrentStateTag;

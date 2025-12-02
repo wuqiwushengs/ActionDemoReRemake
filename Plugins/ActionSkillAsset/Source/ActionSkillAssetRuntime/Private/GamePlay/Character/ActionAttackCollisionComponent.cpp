@@ -48,7 +48,11 @@ void UActionAttackCollisionComponent::OnAttacktoTagretRecall(TArray<FHitResult> 
 		AttackedResult.Attacker=Self;
 		AttackedResult.HitResult=Result;
 		AttackedResult.DamageAmount=1.0f;
-		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(Result.GetActor())->OnBeAttackedRecall(AttackedResult);
+		if(Result.GetActor()->GetClass()->ImplementsInterface(UCollisionSystemInterface::StaticClass()))
+		{
+			ICollisionSystemInterface::Execute_GetAttackCollisionComponent(Result.GetActor())->OnBeAttackedRecall(AttackedResult);
+		}	
+		
 	}
 }
 void UActionAttackCollisionComponent::OnBeAttackedRecall(FAttackedResult AttackedResult)
@@ -58,7 +62,7 @@ void UActionAttackCollisionComponent::OnBeAttackedRecall(FAttackedResult Attacke
 		ICollisionSystemInterface::Execute_OnBeAttackRecallInternal(GetOwner(),AttackedResult);
 	}
 	CanHurt=false;
-	if(!AttackHandle.IsValid()||GetOwner()->GetWorld()->GetTimerManager().IsTimerPending(AttackHandle))
+	if(!AttackHandle.IsValid()||!GetOwner()->GetWorld()->GetTimerManager().IsTimerActive(AttackHandle))
 	{
 		GetOwner()->GetWorld()->GetTimerManager().SetTimer(AttackHandle,[this]()
 		{

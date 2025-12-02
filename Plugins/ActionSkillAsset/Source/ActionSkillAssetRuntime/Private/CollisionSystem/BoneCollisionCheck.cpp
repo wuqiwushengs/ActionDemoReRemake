@@ -5,19 +5,14 @@
 
 #include "CollisionSystem/Interface/CollisionSystemInterface.h"
 
-void UBoneCollisionCheck::OnAnimNotifyCreatedInEditor(FAnimNotifyEvent& ContainingAnimNotifyEvent)
-{
-	Super::OnAnimNotifyCreatedInEditor(ContainingAnimNotifyEvent);
-	EditCollisionContext.CollisionType=ECollisionType::SkeletalMesh;
-}
+
 
 void UBoneCollisionCheck::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
 	float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 	AActor *	CSI=MeshComp->GetOwner();
-	ICollisionSystemInterface * CSIReal=Cast<ICollisionSystemInterface>(CSI);
-	if(CSI&&CSIReal)
+	if(CSI&&CSI->GetClass()->ImplementsInterface(UCollisionSystemInterface::StaticClass()))
 	{	TArray<FName> SocketNames;
 		EditCollisionContext.GetCollisionInfo().GenerateKeyArray(SocketNames);
 		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->StartTrace(SocketNames,EditCollisionContext.CollisionType);
@@ -35,27 +30,29 @@ void UBoneCollisionCheck::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequ
 			MeshComp->GetOwner(),CollisionInfo.Key,CollisionInfo.Value));
 	}
 	AActor *	CSI=MeshComp->GetOwner();
-	ICollisionSystemInterface * CSIReal=Cast<ICollisionSystemInterface>(CSI);
-	if(CSI && !FinalHitResult.IsEmpty()&&CSIReal)
+	if(CSI && !FinalHitResult.IsEmpty()&&CSI->GetClass()->ImplementsInterface(UCollisionSystemInterface::StaticClass()))
 	{
 		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->OnAttacktoTagretRecall(FinalHitResult);
 	}
 }
-
 void UBoneCollisionCheck::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
                                     const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyEnd(MeshComp, Animation, EventReference);
 	AActor *	CSI=MeshComp->GetOwner();
-	ICollisionSystemInterface * CSIReal=Cast<ICollisionSystemInterface>(CSI);
-	if(CSI&&CSIReal)
+	if(CSI&&CSI->GetClass()->ImplementsInterface(UCollisionSystemInterface::StaticClass()))
 	{
 		TArray<FName> SocketNames;
 		EditCollisionContext.GetCollisionInfo().GenerateKeyArray(SocketNames);
 		ICollisionSystemInterface::Execute_GetAttackCollisionComponent(CSI)->EndTrace(EditCollisionContext.CollisionType,SocketNames);
 	}
 }
-
+#if WITH_EDITOR
+void UBoneCollisionCheck::OnAnimNotifyCreatedInEditor(FAnimNotifyEvent& ContainingAnimNotifyEvent)
+{
+	Super::OnAnimNotifyCreatedInEditor(ContainingAnimNotifyEvent);
+	EditCollisionContext.CollisionType=ECollisionType::SkeletalMesh;
+}
 void UBoneCollisionCheck::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -69,3 +66,4 @@ void UBoneCollisionCheck::PostEditChangeProperty(struct FPropertyChangedEvent& P
 		}
 	}
 }
+#endif

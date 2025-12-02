@@ -7,8 +7,13 @@
 #include "CollisionSystem/Interface/CollisionSystemInterface.h"
 #include "GameFramework/Character.h"
 #include "InputFold/InputType.h"
+#include "Interface/CharacterInfoInterface.h"
 #include "ActionPlayerCharacter.generated.h"
 
+class UActionGlobalAttributeSet;
+class UMotionWarpingComponent;
+class UActionEnemyFollowComponent;
+class UActionAttackCollisionComponent;
 struct FCharacterNormalInputData;
 enum class ETriggerEvent : uint8;
 class AActionPlayController;
@@ -22,7 +27,7 @@ class UActionAbilitySystemComponent;
 
 //已经实现了基础的移动和视角更改如果需要更改的话请
 UCLASS()
-class ACTIONSKILLASSETRUNTIME_API AActionPlayerCharacter : public ACharacter,public  IAbilitySystemInterface,public ICollisionSystemInterface
+class ACTIONSKILLASSETRUNTIME_API AActionPlayerCharacter : public ACharacter,public  IAbilitySystemInterface,public ICollisionSystemInterface,public ICharacterInfoInterface
 {
 	GENERATED_BODY()
 
@@ -32,8 +37,9 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UActionAbilitySystemComponent * GetActionAbilitySystemComponent() const ;
 	UInputDataAsset * GetInputDataAsset() const ;
-	UFUNCTION(BlueprintCallable,BlueprintPure)
-	FCharacterNormalInputData GetCharacterNormalInputData();
+	virtual FCharacterNormalInputData GetCharacterNormalInputData() override;
+	UFUNCTION(BlueprintCallable,BlueprintPure)	
+	virtual FCharacterNormalInputData GetNormalInputData() { return CharacterNormalInputData;};
 protected:
 	virtual UAttackCollisionComponent * GetAttackCollisionComponent_Implementation() override;
 	virtual void OnBeAttackRecallInternal_Implementation(FAttackedResult AttackedResult) override;
@@ -42,7 +48,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
 	UActionAbilitySystemComponent * ActionAbilitySystemComponent;
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
-	UAttackCollisionComponent * AttackCollisionComponent;
+	UActionAttackCollisionComponent * AttackCollisionComponent;
 	UPROPERTY()
 	AActionPlayController * PlayController;
 	UPROPERTY(BlueprintReadOnly)
@@ -65,5 +71,10 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	void OnAbilityInputTrigger(const FInputActionInstance& InputInfo ,FGameplayTag InputData,ETriggerEvent TriggerEvent) ;
 
-	
+	/*EnemyFollow*/
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
+	UActionEnemyFollowComponent * EnemyFollowComponent;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly)
+	UMotionWarpingComponent *   MotionWarpingComponent;
+	TObjectPtr<UActionGlobalAttributeSet> CharacterNormalAttribute;
 };

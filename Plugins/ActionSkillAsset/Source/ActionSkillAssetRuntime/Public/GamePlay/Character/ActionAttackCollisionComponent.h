@@ -30,7 +30,7 @@ protected:
 	//用来进行
 	FTimerHandle AttackHandle;
 	UPROPERTY(EditDefaultsOnly)
-	float bHurtCoolTime=0.2f;
+	float bHurtCoolTime=0.5f;
 	UPROPERTY(EditDefaultsOnly)
 	bool CanHurt=true;
 };

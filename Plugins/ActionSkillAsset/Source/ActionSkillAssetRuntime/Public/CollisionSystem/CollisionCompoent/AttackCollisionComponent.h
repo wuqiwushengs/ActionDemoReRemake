@@ -10,14 +10,13 @@ USTRUCT(BlueprintType)
 struct FAttackedResult
 {
 	GENERATED_BODY()
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite)
 	FHitResult HitResult;
 	UPROPERTY(BlueprintReadWrite)
-	AActor * Attacker;
+	AActor * Attacker=nullptr;
 	UPROPERTY(BlueprintReadWrite)
 	float DamageAmount=0.0f;
 };
-
 struct FBaseMeshInfo
 {
 	TSet<FName> SocketNames;
@@ -43,6 +42,8 @@ public:
 	UFUNCTION(BlueprintCallable,BlueprintNativeEvent)
 	FVector GetCurrentUpdateSocketLocation(const FName & SocketName,ECollisionType CollisionType);
 	virtual FVector GetCurrentUpdateSocketLocation_Implementation(const FName & SocketName,ECollisionType CollisionType);
+	UFUNCTION(BlueprintCallable)
+	int GetSocketNums() {return TraceNum;};
 	void  StartTrace(const TArray<FName> & TraceFollowName,ECollisionType CollisionCategory);
 	void StartTrace(const TArray<FName> & TraceFollowName,ECollisionType CollisionCategory,UStaticMesh * AttachStaticMesh);
 	void EndTrace(ECollisionType CollisionType,const TArray<FName> & TraceFollowName);

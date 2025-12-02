@@ -24,14 +24,16 @@ struct FCollisionShapeInfo
 	 * 
 	 */
 	UPROPERTY(EditAnywhere,BlueprintReadOnly)
-	ECollisionShapeInfo CollisionShape;
+	ECollisionShapeInfo CollisionShape=ECollisionShapeInfo::Box;
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,meta=(EditCondition="CollisionShape== ECollisionShapeInfo::Box",EditConditionHides))
-	FVector3f BoxCollisionInfo;
+	FVector3f BoxCollisionInfo=FVector3f::ZeroVector;
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,meta=(EditCondition="CollisionShape== ECollisionShapeInfo::Sphere",EditConditionHides))
-	float SphereRadiusInfo;
+	float SphereRadiusInfo=0.0f;
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,meta=(EditCondition="CollisionShape== ECollisionShapeInfo::Capsule",EditConditionHides))
-	FVector2D CapsuleInfo;
+	FVector2D CapsuleInfo=FVector2D::ZeroVector;
+#if WITH_EDITOR
 	void SetCollisionShape();
+#endif
 	FCollisionShape GetCollisionShape();
 private:
 	//最后选定的的CollisionShape
@@ -51,9 +53,9 @@ struct FGlobalCollisionPoint
 {
 	GENERATED_BODY()
 	UPROPERTY(EditAnywhere,BlueprintReadOnly)
-	FVector StartPoint;
+	FVector StartPoint=FVector::ZeroVector;
 	UPROPERTY(EditAnywhere,BlueprintReadOnly)
-	FVector EndPoint;
+	FVector EndPoint=FVector::ZeroVector;
 };
 USTRUCT(BlueprintType)
 struct FGlobalCollisionTargetPoint
@@ -181,6 +183,7 @@ struct FCollisionContext
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,meta=(EditCondition="CollisionType==ECollisionType::GlobalCollision",EditConditionHides))
 	TMap<FName,FCollisionInfoSum> GlobalCollision;
 	//这个用在瞬时的碰撞检测上
+#if WITH_EDITORONLY_DATA
 	UPROPERTY()
 	UWorld * PreviewWorld;
 	void SetPreviewWorld(UWorld * ViewWorld)
@@ -238,6 +241,7 @@ struct FCollisionContext
 			}
 		}
 	};
+#endif
 	static TArray<FHitResult> GlobalTraceChannel(AActor * Tracer,FName SocketName,FCollisionInfoSum CollisionInfoSum,FVector Rootoffset,FRotator Rotationoffset);
 	
 	static TArray<FHitResult> SkeletalMeshTraceChannel(AActor * Tracer,FName SocketName,FCollisionInfoSum CollisionInfoSum);
@@ -256,9 +260,12 @@ struct FCollisionContext
 		}
 		return TMap<FName,FCollisionInfoSum>();
 	}
-	static void DebugTraceSweep(AActor * Tracer, const TArray<FHitResult> & HitResults,const FCollisionInfoSum & CollisionInfoSum,const FVector & Start, const FVector & End,bool bHit,FLinearColor DebugColor=FLinearColor::Red);
-	static void DebugTraceSweepSingle(AActor * Tracer,FHitResult & HitResults, const FCollisionInfoSum& CollisionInfoSum,const FVector & Start, const FVector & End,bool bHit,FLinearColor DebugColor=FLinearColor::Red);
+#if WITH_EDITOR
+	static void DebugTraceSweep(AActor * Tracer, const TArray<FHitResult> & HitResults,const FCollisionInfoSum & CollisionInfoSum,const FVector & Start, const FVector & End,bool bHit,FLinearColor DebugColor=FLinearColor::Red,FRotator RotationOffset=FRotator());
+	static void DebugTraceSweepSingle(AActor * Tracer,FHitResult & HitResults, const FCollisionInfoSum& CollisionInfoSum,const FVector & Start, const FVector & End,bool bHit,FLinearColor DebugColor=FLinearColor::Red,FRotator RotationOffset=FRotator());
+#endif
 private:
+#if WITH_EDITOR
 	void SetCollisionQueryAndCollisionShape(TMap<FName,FCollisionInfoSum> CollisionInfos)
 	{
 		for(TPair<FName,FCollisionInfoSum> & CollisionInfo: CollisionInfos)
@@ -267,4 +274,6 @@ private:
 			CollisionInfo.Value.ShapeInfo.SetCollisionShape();
 		}
 	}
+#endif
+	
 };

@@ -86,7 +86,7 @@ class ACTIONSKILLASSETRUNTIME_API USkillExecutorDescriptorAsset:public UObject
 public:
 	UPROPERTY(EditDefaultsOnly,Instanced,BlueprintReadWrite)
 	TArray<USkillExecutorConfig*> ExecutorConfigs;
-	#if WITH_EDITORONLY_DATA
+#if WITH_EDITORONLY_DATA
 	UPROPERTY()
 	TObjectPtr<UObject> EditorData;
 #endif

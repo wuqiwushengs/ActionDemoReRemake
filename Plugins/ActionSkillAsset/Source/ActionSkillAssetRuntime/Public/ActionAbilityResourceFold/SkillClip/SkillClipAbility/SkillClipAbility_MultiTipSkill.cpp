@@ -29,7 +29,6 @@ void USkillClipAbility_MultiTipSkill::PreEntryAbility_Implementation()
 }
 UAnimMontage* USkillClipAbility_MultiTipSkill::MultiTipMontagePlayedRule_Implementation()
 {
-	//TODO::MultiTip规则的内部实现
 	return AnimPlayedRules.PlayedMontages[0];
 }
 

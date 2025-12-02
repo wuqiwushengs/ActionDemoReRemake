@@ -5,6 +5,7 @@
 #include "InputAction.h"
 #include "Misc/Guid.h"
 #include "ActionAbilityResourceFold/SkillManager.h"
+#include "Engine/Canvas.h"
 #include "GamePlay/Character/ActionPlayerCharacter.h"
 #include "GamePlayTag/GamePlayTags.h"
 #include "InputFold/InputDataAsset.h"
@@ -19,6 +20,22 @@ UActionAbilitySystemComponent::UActionAbilitySystemComponent()
 	SkillManager=CreateDefaultSubobject<USkillManager>("SkillManager");
 	// ...
 }
+
+void UActionAbilitySystemComponent::DisplayDebug(class UCanvas* Canvas, const class FDebugDisplayInfo& DebugDisplay,
+	float& YL, float& YPos)
+{
+	Super::DisplayDebug(Canvas, DebugDisplay, YL, YPos);
+	FDisplayDebugManager& DisplayDebugManager = Canvas->DisplayDebugManager;
+	for(auto var:InputTagsInBuff)
+	{
+		DisplayDebugManager.DrawString(FString::Printf(TEXT("CurrentFov: %s"),*var.InputTag.ToString()));
+	}
+	for (auto var:InputDataMap)
+	{
+		DisplayDebugManager.DrawString(FString::Printf(TEXT("InputTag %s is Press %d"),*var.Key.ToString(),var.Value.InputType==EInputType::Press));
+	}
+}
+
 // Called when the game starts
 void UActionAbilitySystemComponent::BeginPlay()
 {
@@ -59,16 +76,9 @@ void UActionAbilitySystemComponent::AbilityInputDataLocalProcessing(const FInput
 		OnAbilityInputStart(InputInfo,InputData,InputDataAsset);
 		break;
 	case ETriggerEvent::Completed:
-		/*FTimerHandle TimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle,
-			[this,InputInfo,InputData,InputDataAsset]()
-			{
-				OnAbilityInputEnd(InputInfo,InputData,InputDataAsset);
-			},0.1f,false);*/
 			OnAbilityInputEnd(InputInfo,InputData,InputDataAsset);
 		break;
 	}
-	
 }
 
 void UActionAbilitySystemComponent::OnAbilityInputStart(const FInputActionInstance& InputInfo,FGameplayTag InputTag, UInputDataAsset * InputDataAsset)
@@ -83,9 +93,8 @@ void UActionAbilitySystemComponent::OnAbilityInputStart(const FInputActionInstan
 	{
 		InputTagsInBuff.Empty();
 		bool IfBound=InputExecuteDelegate.ExecuteIfBound(AbilityInfo);
-
 		SetCurrentInputState(EInputState::DisableInputState);
-		
+		return;
 	}
 	switch (CurrentInputState)
 	{
@@ -93,7 +102,6 @@ void UActionAbilitySystemComponent::OnAbilityInputStart(const FInputActionInstan
 		{
 #pragma region PreInputState
 			//预输入内容
-			
 			if(!CheckPreInputIsAllowed(InputTag)) break;
 			InputTagsInBuff.Add(AbilityInfo);
 			//检测是否有执行的tag如果有那么就直接执行
@@ -205,11 +213,11 @@ AActionPlayerCharacter* UActionAbilitySystemComponent::GetActionPlayerCharacter(
 	return Cast<AActionPlayerCharacter>(GetOwnerActor());
 }
 
-FCharacterNormalInputData UActionAbilitySystemComponent::GetCharacterNormalInputData()
+FCharacterNormalInputData UActionAbilitySystemComponent::GetControlledCharacterNormalInputData()
 {
-	return GetActionPlayerCharacter()->GetCharacterNormalInputData();
+	ICharacterInfoInterface *CII=Cast<ICharacterInfoInterface>(GetActionPlayerCharacter());
+	return CII->GetCharacterNormalInputData();
 }
-
 void UActionAbilitySystemComponent::SetCurrentStateTag(FGameplayTag NewStateTag)
 {
 	FGameplayTag LastStateTag=CurrentStateTag;
@@ -229,7 +237,6 @@ void UActionAbilitySystemComponent::SetCurrentInputState(EInputState NewInputSta
  		CurrentInputState=NewInputState;
  		OnInputStateChanged.Broadcast(LastInputState,CurrentInputState);
  	}
-	UE_LOG(LogTemp,Warning,TEXT("NewInputState is Equal With NewInputState"));
 }
 
 bool UActionAbilitySystemComponent::CheckInputLengthToSetInputLock(float InputLength)
@@ -353,7 +360,11 @@ void UActionAbilitySystemComponent::OnPreSkillExecute(FGameplayTag ExeTag, int C
 
 void UActionAbilitySystemComponent::OnInputFinal(const FAbilityInputInfo& InputInfo)
 {
-	
+	FSkillTitle SkillTitle = *InputDataMap.Find(InputInfo.InputTag);
+	// 尝试执行技能
+	if (SkillManager->TurnToNextSkillExecutor(ESkillReleaseType::Manual, SkillTitle)) return;
+	InputTagsInBuff.RemoveAll([&](const FAbilityInputInfo& inInputInfo)
+	{return inInputInfo.InputTag == InputInfo.InputTag;});
 	while (InputTagsInBuff.Num() > 0)
 	{
 		FAbilityInputInfo HighestWeightInputInfo;
@@ -361,18 +372,14 @@ void UActionAbilitySystemComponent::OnInputFinal(const FAbilityInputInfo& InputI
 		{
 			break; // 如果找不到权重最高的，直接退出
 		}
-		FSkillTitle SkillTitle = *InputDataMap.Find(HighestWeightInputInfo.InputTag);
-		// 尝试执行技能
-		if (SkillManager->TurnToNextSkillExecutor(ESkillReleaseType::Manual, SkillTitle))
-		{
-			// 成功执行，退出循环
-			return;
-		}
+		FSkillTitle HighestSkillTitle=*InputDataMap.Find(HighestWeightInputInfo.InputTag);
 		// 如果执行失败，从缓冲区中移除当前权重最高的输入
-		InputTagsInBuff.RemoveAll([&](const FAbilityInputInfo& InputInfo)
+		if (SkillManager->TurnToNextSkillExecutor(ESkillReleaseType::Manual,HighestSkillTitle)) return;
+		InputTagsInBuff.RemoveAll([&](const FAbilityInputInfo& inInputInfo)
 		{
-			return InputInfo.InputTag == HighestWeightInputInfo.InputTag;
+			return inInputInfo.InputTag == HighestWeightInputInfo.InputTag;
 		});
+		
 	}
 	SetCurrentInputState(EInputState::NormalInputState);
 }

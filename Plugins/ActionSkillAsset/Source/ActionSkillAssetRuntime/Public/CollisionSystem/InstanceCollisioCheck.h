@@ -18,7 +18,10 @@ class ACTIONSKILLASSETRUNTIME_API UInstanceCollisioCheck : public UAnimNotify
 	GENERATED_BODY()
 public:
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
+#if WITH_EDITOR
 	virtual  void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+	
 	//用来编辑内容
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FCollisionContext EditCollisionContext;

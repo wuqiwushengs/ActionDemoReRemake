@@ -116,7 +116,6 @@ void USkillManager::UpdateAutoSkillCheck()
 			bCheckAutoChildrenSkill=false;	
 		   StartSelectedSkillConfig(FinalConfig,FSkillTitle());
 			GetOwnerAbilitySystemComponent()->SetCurrentInputState(EInputState::DisableInputState);
-			UE_LOG(LogTemp,Warning,TEXT("Execute Skill"))
 		}
 		return;
 	}
@@ -178,6 +177,7 @@ USkillExecutorConfig* USkillManager::FindNextSkillExecutor(ESkillReleaseType Ski
 	if (!SelectedSkill)
 	{	//再寻找Root
 		FindCanExecuteSkillConfigFromRoot(SelectedSkill,SkillTriggerType,InputInfo);
+		UE_LOG(LogTemp,Warning,TEXT("Don't have Selected Skill And find Root"));
 	}
 	return SelectedSkill;
 }
@@ -196,6 +196,7 @@ USkillExecutorConfig * USkillManager::FindCanExecuteSkillExecutorFromChildren(ES
 	{
 		for (auto SkillConfig:ParentConfig->Children)
 		{
+			
 			if(SkillConfig->ExecutorDescriptor.Condition)
 			{
 				if(!SkillConfig->ExecutorDescriptor.Condition->CanTransition(GetOwnerAbilitySystemComponent()->GetActionPlayerCharacter(),GetOwnerAbilitySystemComponent(),this)) continue;
@@ -281,6 +282,7 @@ void USkillManager::StartSelectedSkillConfig(USkillExecutorConfig* SelectedConfi
 	check(SelectedConfig);
 	ShutdownCurrentSkillExecutor();
 	SetSelectedSkillConfig(SelectedConfig);
+	UE_LOG(LogTemp,Warning,TEXT("CurrenSelectedSkill %s"),*SelectedConfig->SkillDescriptorName.ToString());
 	//设置自动技能检测
 	TArray<USkillExecutorConfig *> AutoSkillConfigs;
 	FindCorrectSkillConfigsFromRootAndParent(AutoSkillConfigs,SelectedConfig,ESkillReleaseType::Auto);
@@ -295,7 +297,7 @@ void USkillManager::StartSelectedSkillConfig(USkillExecutorConfig* SelectedConfi
 void USkillManager::SetSelectedSkillConfig(USkillExecutorConfig* InSkillConfig)
 {
 
-	if(SelectedSkillExecutorConfig&&SelectedSkillExecutorConfig->ExecutorDescriptor.Executor->bCanSavetoOffset)
+	if(SelectedSkillExecutorConfig&&SelectedSkillExecutorConfig->ExecutorDescriptor.Executor->CanSavetoOffset())
 	{
 		LastSelectedSkillExecutorConfig=SelectedSkillExecutorConfig;
 	}

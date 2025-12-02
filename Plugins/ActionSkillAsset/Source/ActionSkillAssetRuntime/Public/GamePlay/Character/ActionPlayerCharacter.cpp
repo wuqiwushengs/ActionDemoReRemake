@@ -3,13 +3,15 @@
 
 #include "ActionPlayerCharacter.h"
 #include "AbilitySystemComponent.h"
+#include "ActionAttackCollisionComponent.h"
+#include "ActionGlobalAttributeSet.h"
 #include "InputActionValue.h"
 #include "AbilitySystemFold/AbilitySystemCompoentRef/ActionAbilitySystemComponent.h"
 #include "AnimInstance/PostAnimPlayedNotify.h"
 #include "GamePlay/ActionPlayController.h"
 #include "InputFold/EnhancedInput/ActionInputComponent.h"
-#include "Camera/CameraComponent.h"
-#include "GameFramework/SpringArmComponent.h"
+#include "EnemyFollow/Component/ActionEnemyFollowComponent.h"
+#include "MotionWarpingComponent.h"
 #include "GamePlayTag/GamePlayTags.h"
 #include "Kismet/KismetMathLibrary.h"
 
@@ -20,8 +22,10 @@ AActionPlayerCharacter::AActionPlayerCharacter()
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	ActionAbilitySystemComponent=CreateDefaultSubobject<UActionAbilitySystemComponent>("ActionAbilitySystemComponent");
-	AttackCollisionComponent=CreateDefaultSubobject<UAttackCollisionComponent>("AttackCollisionCompoent");
-	//TODO::临时使用后面对摄像机实行自定义方法。
+	AttackCollisionComponent=CreateDefaultSubobject<UActionAttackCollisionComponent>("AttackCollisionComponent");
+	EnemyFollowComponent=CreateDefaultSubobject<UActionEnemyFollowComponent>("ActionEnemyFollowComponent");
+	MotionWarpingComponent=CreateDefaultSubobject<UMotionWarpingComponent>("MotionWarpingComponent");
+	CharacterNormalAttribute=CreateDefaultSubobject<UActionGlobalAttributeSet>("CharacterAttribute");
 }
 
 UAbilitySystemComponent* AActionPlayerCharacter::GetAbilitySystemComponent() const
@@ -96,6 +100,7 @@ void AActionPlayerCharacter::OnInputLook(const FInputActionValue&  InputActionVa
 
 void AActionPlayerCharacter::ProcessLook(const FInputActionValue& InputActionValue)
 {
+	//TODO:: 摄像机限制了但是没有限制控制器导致pitch轴会有时候对不齐。导致摄像机正常但是人走不动
 	AddControllerYawInput(CharacterNormalInputData.LookInputValue.X*0.5);
 	AddControllerPitchInput(CharacterNormalInputData.LookInputValue.Y*0.5);
 }
@@ -106,6 +111,7 @@ void AActionPlayerCharacter::CheckPostAnimPlayAndStop()
 	{
 		GetMesh()->GetAnimInstance()->Montage_StopGroupByName(0,AttackSlotGroupName);
 		GetActionAbilitySystemComponent()->RemoveLooseGameplayTag(GamePlayTags::PostAnim);
+		UE_LOG(LogTemp,Warning,TEXT("StopMontageUseNotify"))
 	}
 }
 
@@ -115,11 +121,8 @@ void AActionPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
-
-
 void AActionPlayerCharacter::OnAbilityInputTrigger(const FInputActionInstance& InputInfo, FGameplayTag InputData,ETriggerEvent TriggerEvent)
 {
-	UE_LOG(LogTemp,Warning,TEXT("%s"),*InputData.ToString());
 	if (TriggerEvent==ETriggerEvent::Started ||InputInfo.GetTriggerEvent()==ETriggerEvent::Completed)
 	{
 		ActionAbilitySystemComponent->AbilityInputDataLocalProcessing(InputInfo,InputData,GetInputDataAsset(),TriggerEvent);
